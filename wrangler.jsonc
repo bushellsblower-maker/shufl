@@ -1,0 +1,36 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "shufl",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-21",
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": {
+    "enabled": true
+  },
+  // Hostname is config-only. GitHub Actions / Workers Builds (`npm run deploy`)
+  // attach this custom domain.
+  "routes": [
+    {
+      "pattern": "shufl.cybush.uk",
+      "custom_domain": true
+    }
+  ],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    // Record a fleet audit hit on every request, including `/` → index.html.
+    // Without this, a matched asset is served before the Worker runs.
+    "run_worker_first": true
+  },
+  "vars": {
+    "SITE_NAME": "SHUFL",
+    "SITE_URL": "https://shufl.cybush.uk"
+  },
+  "analytics_engine_datasets": [
+    {
+      "binding": "AUDIT_HITS",
+      "dataset": "cybush"
+    }
+  ]
+}
