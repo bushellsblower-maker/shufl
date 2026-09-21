@@ -1,0 +1,41 @@
+# Same publisher as Workers Builds (`npm run deploy`). Prefer connecting
+# the repo in Cloudflare (Workers → shufl → Settings → Builds) if you want
+# dashboard builds. This Action publishes when the GitHub secrets exist.
+# Do not publish from a laptop.
+
+name: Publish to Cloudflare
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: publish-shufl
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      CI: true
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Require GitHub Cloudflare secrets
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Add GitHub Actions secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID on bushellsblower-maker/shufl (Settings → Secrets and variables → Actions). Adonis secrets do not carry over to this repo. Then re-run this workflow. Publishing is GitHub → Cloudflare only."
+            exit 1
+          fi
+      - name: Publish Worker shufl
+        run: npm run deploy
