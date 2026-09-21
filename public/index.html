@@ -131,37 +131,8 @@
     color: var(--muted);
   }
 
-  .tabs {
-    display: flex;
-    gap: 4px;
-    background: var(--bg2);
-    border-radius: 2px;
-    padding: 3px;
-    border: 2px solid var(--border);
-  }
-  .tab {
-    border: none;
-    background: transparent;
-    color: var(--muted);
-    padding: 10px 14px;
-    border-radius: 2px;
-    font-family: var(--font);
-    font-size: 0.95rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    cursor: pointer;
-    min-height: 44px;
-  }
-  .tab.active {
-    background: #3a3428;
-    color: #f3e6c8;
-    box-shadow: inset 0 -2px 0 var(--accent);
-  }
-
   main { flex: 1; display: flex; flex-direction: column; gap: 12px; padding-bottom: 16px; }
-  .panel { display: none; flex-direction: column; gap: 12px; min-width: 0; max-width: 100%; }
-  .panel.active { display: flex; }
+  .panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; max-width: 100%; }
 
   .card {
     position: relative;
@@ -208,6 +179,28 @@
   .team.p1 { border-color: rgba(197, 206, 214, 0.5); }
   .team.p2 { border-color: rgba(224, 161, 90, 0.7); }
   .team.has-hammer { box-shadow: 0 0 0 2px var(--hammer); }
+  .team { cursor: pointer; }
+  .team .name-input { cursor: text; }
+  .team.selected.p1 {
+    border-color: var(--p1);
+    background: rgba(197, 206, 214, 0.22);
+    box-shadow: inset 0 0 0 1px var(--p1);
+  }
+  .team.selected.p2 {
+    border-color: var(--p2);
+    background: rgba(224, 161, 90, 0.24);
+    box-shadow: inset 0 0 0 1px var(--p2);
+  }
+  .team.selected.has-hammer.p1 {
+    box-shadow: inset 0 0 0 1px var(--p1), 0 0 0 2px var(--hammer);
+  }
+  .team.selected.has-hammer.p2 {
+    box-shadow: inset 0 0 0 1px var(--p2), 0 0 0 2px var(--hammer);
+  }
+  .team.selected .score-big { text-shadow: 0 0 12px currentColor; }
+  .team.selected.p1 .name-input { border-bottom-color: var(--p1); border-bottom-style: solid; }
+  .team.selected.p2 .name-input { border-bottom-color: var(--p2); border-bottom-style: solid; }
+  .team.selected .name-input:focus { border-bottom-color: var(--accent); }
   .name-input {
     width: 100%;
     max-width: 100%;
@@ -220,10 +213,14 @@
     font-size: 16px;
     font-weight: 600;
     letter-spacing: 0.04em;
-    text-transform: uppercase;
+    text-transform: none;
     text-align: center;
     padding: 6px 4px;
     outline: none;
+  }
+  .name-input::placeholder {
+    color: rgba(163, 156, 144, 0.45);
+    font-weight: 500;
   }
   .name-input:focus { border-bottom-color: var(--accent); }
   .score-big {
@@ -246,17 +243,31 @@
   .hammer-badge {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 4px;
-    font-size: 0.75rem;
+    appearance: none;
+    -webkit-appearance: none;
+    font-family: var(--font);
+    font-size: 0.68rem;
     font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-top: 4px;
+    cursor: pointer;
+  }
+  .hammer-badge.on {
     color: #1a1200;
     background: var(--hammer);
-    padding: 3px 8px;
-    border-radius: 999px;
-    margin-top: 6px;
-    visibility: hidden;
+    border-color: var(--hammer);
   }
-  .team.has-hammer .hammer-badge { visibility: visible; }
+  .score-dock.for-p1 > .card { border-color: rgba(197, 206, 214, 0.9); }
+  .score-dock.for-p2 > .card { border-color: rgba(224, 161, 90, 0.95); }
 
   .vs-col {
     display: flex;
@@ -466,8 +477,6 @@
     margin-bottom: 8px;
   }
   .round-log {
-    max-height: 200px;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -495,12 +504,13 @@
   .round-item .tot { color: var(--muted); font-variant-numeric: tabular-nums; }
 
   /* Chart */
+  .chart:empty { display: none; }
   .chart {
     display: flex;
     align-items: flex-end;
     gap: 6px;
-    min-height: 120px;
-    padding: 8px 0 4px;
+    min-height: 0;
+    padding: 4px 0;
     width: 100%;
     max-width: 100%;
     min-width: 0;
@@ -585,8 +595,8 @@
   .empty {
     text-align: center;
     color: var(--muted);
-    padding: 24px 12px;
-    font-size: 0.9rem;
+    padding: 8px;
+    font-size: 0.85rem;
   }
 
   .toolbar {
@@ -594,6 +604,7 @@
     flex-wrap: wrap;
     gap: 8px;
   }
+  .card .toolbar { margin-top: 8px; }
   .toolbar .btn { flex: 1; min-width: 120px; }
 
   .score-dock {
@@ -628,83 +639,90 @@
   }
 
   @media (max-width: 700px) {
-    header {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 10px;
+    body {
+      padding:
+        max(4px, env(safe-area-inset-top))
+        max(6px, env(safe-area-inset-right))
+        max(6px, env(safe-area-inset-bottom))
+        max(6px, env(safe-area-inset-left));
     }
-    .tabs { width: 100%; }
-    .tab { flex: 1; text-align: center; padding: 10px 8px; }
+    header {
+      flex-direction: row;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 0 4px;
+    }
+    .brand {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 8px;
+      padding: 3px 8px 4px;
+    }
+    header h1 { font-size: 1.35rem; letter-spacing: 0.1em; }
+    .brand p { font-size: 0.58rem; letter-spacing: 0.12em; }
+
+    main { gap: 8px; padding-bottom: 8px; }
+    .panel { gap: 8px; }
+    .card { padding: 8px; }
+    .score-dock { gap: 8px; }
+
+    .scoreboard { gap: 4px; }
+    .team { padding: 4px 3px; }
+    .name-input { padding: 2px 2px 3px; }
+    .score-big { font-size: 2.05rem; margin: 0; line-height: 1; }
+    .round-pts { font-size: 0.72rem; }
+    .vs-col { min-width: 44px; gap: 2px; }
+    .target-chip { padding: 3px 4px; }
+    .target-chip strong { font-size: 0.95rem; }
+    .hammer-badge { margin-top: 3px; padding: 1px 6px; font-size: 0.62rem; }
 
     .row.spread {
-      flex-direction: column;
-      align-items: stretch;
+      flex-direction: row;
+      align-items: center;
+      gap: 6px;
     }
-    .seg { width: 100%; }
     .seg button {
-      flex: 1 1 0;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      padding: 6px 10px;
+      min-height: 36px;
     }
+    .custom-target { height: 36px; width: 56px; }
 
-    .zones { grid-template-columns: repeat(2, 1fr); }
-    .zone-btn { min-height: 64px; font-size: 1.5rem; }
-    .actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1fr); }
+    .zones { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .zones-title { margin-bottom: 6px; font-size: 0.72rem; }
+    .zone-btn { min-height: 44px; font-size: 1.15rem; padding: 4px 2px; line-height: 1; }
+    .zone-btn small { font-size: 0.58rem; margin-top: 1px; }
+    .actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1fr); gap: 6px; }
     .actions .btn {
-      min-height: 52px;
+      min-height: 42px;
       height: auto;
-      font-size: 0.95rem;
-      line-height: 1.15;
-      padding: 10px 6px;
+      font-size: 0.75rem;
+      line-height: 1.1;
+      padding: 6px 3px;
       white-space: normal;
     }
-    .toolbar { flex-direction: column; }
-    .toolbar .btn { width: 100%; min-width: 0; min-height: 48px; }
+    .toolbar { flex-direction: row; gap: 6px; }
+    .toolbar .btn { width: auto; flex: 1; min-width: 0; min-height: 40px; font-size: 0.75rem; padding: 6px 4px; }
 
-    #panel-play.active { padding-bottom: var(--dock-pad, 340px); }
-
-    .score-dock {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 40;
-      gap: 8px;
-      max-height: min(58vh, 420px);
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      padding:
-        10px
-        max(10px, env(safe-area-inset-right))
-        calc(10px + env(safe-area-inset-bottom))
-        max(10px, env(safe-area-inset-left));
-      background: rgba(16, 17, 19, 0.97);
-      border-top: 2px solid var(--border);
-      box-shadow: 0 -12px 28px rgba(0, 0, 0, 0.45);
-    }
-    .score-dock .card {
-      padding: 4px 2px 2px;
-      background: transparent;
-      border: none;
-      box-shadow: none;
-    }
-    .score-dock .card::before { content: none; }
-    body.keyboard-open .score-dock { display: none; }
-
-    .toast { bottom: calc(var(--dock-pad, 16px) + 8px); }
-
-    .round-log { max-height: min(280px, 42vh); }
+    .section-title { margin-bottom: 4px; font-size: 0.72rem; }
+    .bars { height: 56px; }
+    .round-log { gap: 4px; }
+    .round-item { padding: 4px 6px; gap: 4px; font-size: 0.8rem; }
+    .history-list { gap: 4px; }
+    .hist-card { padding: 6px 8px; border-radius: 4px; }
+    .hist-card .head { margin-bottom: 2px; }
+    .hist-card .names { font-size: 0.88rem; margin-bottom: 0; }
+    .banner { padding: 8px; font-size: 0.95rem; }
+    .card .toolbar { margin-top: 6px; }
   }
 
   @media (max-width: 420px) {
-    .scoreboard { gap: 6px; }
-    .team { padding: 8px 4px; }
-    .vs-col { min-width: 52px; gap: 4px; }
-    .target-chip { padding: 4px 2px; }
-    .score-big { font-size: clamp(2.2rem, 14vw, 3rem); }
-    .round-pts { font-size: 0.8rem; }
+    .scoreboard { gap: 4px; }
+    .team { padding: 4px 2px; }
+    .vs-col { min-width: 40px; gap: 2px; }
+    .target-chip { padding: 2px; }
+    .score-big { font-size: 1.85rem; }
+    .round-pts { font-size: 0.68rem; }
 
     .round-item {
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -727,32 +745,27 @@
       <h1>SHUFL</h1>
       <p>Shuffleboard scorekeeper</p>
     </div>
-    <nav class="tabs" role="tablist">
-      <button class="tab active" data-tab="play" type="button">Play</button>
-      <button class="tab" data-tab="stats" type="button">Rounds</button>
-      <button class="tab" data-tab="history" type="button">History</button>
-    </nav>
   </header>
 
   <main>
     <!-- PLAY -->
     <section class="panel active" id="panel-play">
       <div class="card scoreboard">
-        <div class="team p1" id="team1">
-          <input class="name-input" id="name1" value="Team A" maxlength="18" aria-label="Player 1 name">
+        <div class="team p1 selected has-hammer" id="team1" data-team="0">
+          <input class="name-input" id="name1" value="TEAM A" maxlength="18" aria-label="Team name" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="TEAM A">
           <div class="score-big" id="score1">0</div>
           <div class="round-pts" id="round1">This round: <strong>0</strong></div>
-          <div class="hammer-badge" id="hammer1">🔨 Hammer</div>
+          <button type="button" class="hammer-badge on" id="hammerBtn0" data-hammer="0" aria-label="Hammer, shoots last">🔨 Hammer</button>
         </div>
         <div class="vs-col">
           <div class="vs">VS</div>
           <div class="target-chip">Target<strong id="targetDisplay">15</strong></div>
         </div>
-        <div class="team p2" id="team2">
-          <input class="name-input" id="name2" value="Team B" maxlength="18" aria-label="Player 2 name">
+        <div class="team p2" id="team2" data-team="1">
+          <input class="name-input" id="name2" value="TEAM B" maxlength="18" aria-label="Team name" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="TEAM B">
           <div class="score-big" id="score2">0</div>
           <div class="round-pts" id="round2">This round: <strong>0</strong></div>
-          <div class="hammer-badge" id="hammer2">🔨 Hammer</div>
+          <button type="button" class="hammer-badge" id="hammerBtn1" data-hammer="1" aria-label="Hammer, shoots last">🔨 Hammer</button>
         </div>
       </div>
 
@@ -761,8 +774,8 @@
       </div>
 
       <div class="card">
-        <div class="row spread" style="margin-bottom:10px">
-          <label class="lbl">Target score</label>
+        <div class="row spread">
+          <label class="lbl">Target</label>
           <div class="row">
             <div class="seg" id="targetSeg">
               <button type="button" data-target="15" class="on">15</button>
@@ -771,30 +784,19 @@
             <input class="custom-target" id="customTarget" type="number" min="1" max="99" placeholder="…" title="Custom target" inputmode="numeric">
           </div>
         </div>
-        <div class="row spread">
-          <label class="lbl">Hammer (shoots last)</label>
-          <div class="seg" id="hammerSeg">
-            <button type="button" data-hammer="0" class="on" id="hammerBtn0">Team A</button>
-            <button type="button" data-hammer="1" id="hammerBtn1">Team B</button>
-          </div>
-        </div>
       </div>
 
-      <div class="score-dock">
+      <div class="score-dock for-p1">
         <div class="card">
           <div class="zones-title">
-            <span>Add points — scoring player</span>
+            <span>Add points</span>
             <span style="color:var(--warn)" id="roundLabel">Round 1</span>
           </div>
-          <div class="scoring-for">
-            <button type="button" class="score-for on p1" id="for1" data-for="0">Team A</button>
-            <button type="button" class="score-for p2" id="for2" data-for="1">Team B</button>
-          </div>
           <div class="zones">
-            <button type="button" class="zone-btn z1" data-pts="1">1<small>point</small></button>
-            <button type="button" class="zone-btn z2" data-pts="2">2<small>points</small></button>
-            <button type="button" class="zone-btn z3" data-pts="3">3<small>points</small></button>
-            <button type="button" class="zone-btn z4" data-pts="4">4<small>hammer end</small></button>
+            <button type="button" class="zone-btn z1" data-pts="1">+1</button>
+            <button type="button" class="zone-btn z2" data-pts="2">+2</button>
+            <button type="button" class="zone-btn z3" data-pts="3">+3</button>
+            <button type="button" class="zone-btn z4" data-pts="4" aria-label="Add 4, hammer end">+4<small>end</small></button>
           </div>
         </div>
 
@@ -814,15 +816,8 @@
     <!-- STATS / ROUNDS -->
     <section class="panel" id="panel-stats">
       <div class="card">
-        <div class="section-title">Round-by-round points</div>
+        <div class="section-title">Rounds</div>
         <div class="chart" id="chart"></div>
-        <div class="legend">
-          <span><i class="l1"></i><span id="leg1">Team A</span></span>
-          <span><i class="l2"></i><span id="leg2">Team B</span></span>
-        </div>
-      </div>
-      <div class="card">
-        <div class="section-title">Completed rounds</div>
         <div class="round-log" id="roundLog">
           <div class="empty">No rounds completed yet.</div>
         </div>
@@ -832,13 +827,13 @@
     <!-- HISTORY -->
     <section class="panel" id="panel-history">
       <div class="card">
-        <div class="section-title">Match history</div>
+        <div class="section-title">History</div>
         <div class="history-list" id="historyList">
           <div class="empty">No past matches yet.</div>
         </div>
-      </div>
-      <div class="toolbar">
-        <button type="button" class="btn danger" id="btnClearHistory">Clear All History</button>
+        <div class="toolbar">
+          <button type="button" class="btn danger" id="btnClearHistory">Clear All History</button>
+        </div>
       </div>
     </section>
   </main>
@@ -852,7 +847,7 @@
   var STORAGE_KEY = 'shuffleboard-scoreboard-v1';
 
   var state = {
-    names: ['Team A', 'Team B'],
+    names: ['TEAM A', 'TEAM B'],
     scores: [0, 0],
     roundPts: [0, 0],
     hammer: 0,
@@ -875,7 +870,7 @@
       if (data.current) {
         Object.assign(state, data.current);
         // ensure arrays
-        state.names = data.current.names || state.names;
+        state.names = defaultedNames(data.current.names || state.names);
         state.scores = data.current.scores || [0, 0];
         state.roundPts = data.current.roundPts || [0, 0];
         state.rounds = data.current.rounds || [];
@@ -1034,7 +1029,7 @@
     maybeDeclareWinner();
     if (state.gameOver) {
       archiveIfWon();
-      toast(state.names[state.winner] + ' wins!');
+      toast(shownName(state.names[state.winner], state.winner) + ' wins!');
     }
 
     render();
@@ -1103,7 +1098,7 @@
     state.gameOver = false;
     state.winner = null;
     state.startedAt = Date.now();
-    state.names = keepNames;
+    state.names = defaultedNames(keepNames);
     render();
     save();
     toast('New game started');
@@ -1140,9 +1135,40 @@
     } catch (e) { return ''; }
   }
 
+  function nameIsBlank(value) {
+    return value == null || String(value).trim() === '';
+  }
+
+  // Defaults apply when a match starts or a save has no name. Never while typing.
+  function defaultedNames(names) {
+    var next = [names && names[0], names && names[1]];
+    next[0] = nameIsBlank(next[0]) ? 'TEAM A' : String(next[0]).toUpperCase();
+    next[1] = nameIsBlank(next[1]) ? 'TEAM B' : String(next[1]).toUpperCase();
+    return next;
+  }
+
+  function shownName(value, index) {
+    return nameIsBlank(value) ? (index === 0 ? 'TEAM A' : 'TEAM B') : value;
+  }
+
+  function upperName(input) {
+    var start = input.selectionStart;
+    var end = input.selectionEnd;
+    var next = input.value.toUpperCase();
+    if (input.value !== next) {
+      input.value = next;
+      try {
+        if (start != null) input.setSelectionRange(start, end);
+      } catch (e) { /* number inputs */ }
+    }
+    return input.value;
+  }
+
   function render() {
-    $('name1').value = state.names[0];
-    $('name2').value = state.names[1];
+    // Only write when state actually differs, so clearing the last letter
+    // does not snap the caret or put the default name back.
+    if ($('name1').value !== state.names[0]) $('name1').value = state.names[0];
+    if ($('name2').value !== state.names[1]) $('name2').value = state.names[1];
     $('score1').textContent = state.scores[0];
     $('score2').textContent = state.scores[1];
     $('round1').innerHTML = 'This round: <strong>' + state.roundPts[0] + '</strong>';
@@ -1152,18 +1178,17 @@
 
     $('team1').classList.toggle('has-hammer', state.hammer === 0);
     $('team2').classList.toggle('has-hammer', state.hammer === 1);
+    $('team1').classList.toggle('selected', state.scoringFor === 0);
+    $('team2').classList.toggle('selected', state.scoringFor === 1);
 
-    $('hammerBtn0').textContent = state.names[0];
-    $('hammerBtn1').textContent = state.names[1];
     $('hammerBtn0').classList.toggle('on', state.hammer === 0);
     $('hammerBtn1').classList.toggle('on', state.hammer === 1);
 
-    $('for1').textContent = state.names[0];
-    $('for2').textContent = state.names[1];
-    $('for1').classList.toggle('on', state.scoringFor === 0);
-    $('for2').classList.toggle('on', state.scoringFor === 1);
-    $('leg1').textContent = state.names[0];
-    $('leg2').textContent = state.names[1];
+    var pad = document.querySelector('.score-dock');
+    if (pad) {
+      pad.classList.toggle('for-p1', state.scoringFor === 0);
+      pad.classList.toggle('for-p2', state.scoringFor === 1);
+    }
 
     // Target seg
     var segBtns = document.querySelectorAll('#targetSeg button');
@@ -1183,7 +1208,7 @@
     var banner = $('winnerBanner');
     if (state.gameOver && state.winner !== null) {
       banner.classList.add('show');
-      $('winnerName').textContent = state.names[state.winner];
+      $('winnerName').textContent = shownName(state.names[state.winner], state.winner);
     } else {
       banner.classList.remove('show');
     }
@@ -1207,8 +1232,8 @@
       var r = state.rounds[i];
       html += '<div class="round-item">' +
         '<span class="rn">R' + r.n + '</span>' +
-        '<span class="s1">' + state.names[0] + ' +' + r.pts[0] + '</span>' +
-        '<span class="s2">' + state.names[1] + ' +' + r.pts[1] + '</span>' +
+        '<span class="s1">+' + r.pts[0] + '</span>' +
+        '<span class="s2">+' + r.pts[1] + '</span>' +
         '<span class="tot">' + r.totals[0] + '–' + r.totals[1] + '</span>' +
         '</div>';
     }
@@ -1218,7 +1243,7 @@
   function renderChart() {
     var el = $('chart');
     if (!state.rounds.length) {
-      el.innerHTML = '<div class="empty" style="width:100%">Play rounds to see the chart.</div>';
+      el.innerHTML = '';
       return;
     }
     var max = 1;
@@ -1255,13 +1280,13 @@
         result = g.scores[0] + ' – ' + g.scores[1] +
           (g.incomplete ? ' <span style="color:var(--warn)">(incomplete)</span>' : ' <span style="color:var(--muted)">(tie)</span>');
       } else {
-        result = '<span class="w">' + g.names[g.winner] + ' won</span> · ' +
+        result = '<span class="w">' + shownName(g.names[g.winner], g.winner) + ' won</span> · ' +
           g.scores[0] + ' – ' + g.scores[1] + ' (to ' + g.target + ')';
       }
       html += '<div class="hist-card">' +
         '<div class="head"><span>' + formatDate(g.endedAt || g.startedAt) + '</span>' +
         '<span>' + (g.rounds ? g.rounds.length : 0) + ' rounds</span></div>' +
-        '<div class="names">' + g.names[0] + ' vs ' + g.names[1] + '</div>' +
+        '<div class="names">' + shownName(g.names[0], 0) + ' vs ' + shownName(g.names[1], 1) + '</div>' +
         '<div class="result">' + result + '</div>' +
         '</div>';
     });
@@ -1269,55 +1294,13 @@
   }
 
   // Events
-  function syncDockPad() {
-    var dock = document.querySelector('.score-dock');
-    var play = $('panel-play');
-    var narrow = window.matchMedia('(max-width: 700px)').matches;
-    var hide = !dock || !play || !narrow || !play.classList.contains('active') ||
-      document.body.classList.contains('keyboard-open');
-    if (hide) {
-      document.documentElement.style.setProperty('--dock-pad', '0px');
-      return;
-    }
-    document.documentElement.style.setProperty('--dock-pad', (dock.offsetHeight + 10) + 'px');
-  }
-
-  document.querySelectorAll('.tab').forEach(function (tab) {
-    tab.addEventListener('click', function () {
-      document.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); });
-      document.querySelectorAll('.panel').forEach(function (p) { p.classList.remove('active'); });
-      tab.classList.add('active');
-      $('panel-' + tab.getAttribute('data-tab')).classList.add('active');
-      syncDockPad();
-    });
-  });
-
-  window.addEventListener('resize', syncDockPad);
-  window.addEventListener('orientationchange', syncDockPad);
-  document.addEventListener('focusin', function (e) {
-    var t = e.target;
-    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) {
-      document.body.classList.add('keyboard-open');
-      syncDockPad();
-    }
-  });
-  document.addEventListener('focusout', function () {
-    setTimeout(function () {
-      var ae = document.activeElement;
-      if (!ae || (ae.tagName !== 'INPUT' && ae.tagName !== 'TEXTAREA')) {
-        document.body.classList.remove('keyboard-open');
-        syncDockPad();
-      }
-    }, 80);
-  });
-
   $('name1').addEventListener('input', function () {
-    state.names[0] = this.value || 'Team A';
+    state.names[0] = upperName(this);
     render();
     save();
   });
   $('name2').addEventListener('input', function () {
-    state.names[1] = this.value || 'Team B';
+    state.names[1] = upperName(this);
     render();
     save();
   });
@@ -1343,17 +1326,18 @@
     save();
   });
 
-  document.querySelectorAll('#hammerSeg button').forEach(function (b) {
-    b.addEventListener('click', function () {
-      state.hammer = parseInt(b.getAttribute('data-hammer'), 10);
+  document.querySelectorAll('.team[data-team]').forEach(function (el) {
+    el.addEventListener('click', function (e) {
+      if (e.target.closest('.hammer-badge')) return;
+      state.scoringFor = parseInt(el.getAttribute('data-team'), 10);
       render();
       save();
     });
   });
 
-  document.querySelectorAll('.score-for').forEach(function (b) {
+  document.querySelectorAll('.hammer-badge').forEach(function (b) {
     b.addEventListener('click', function () {
-      state.scoringFor = parseInt(b.getAttribute('data-for'), 10);
+      state.hammer = parseInt(b.getAttribute('data-hammer'), 10);
       render();
       save();
     });
@@ -1374,8 +1358,6 @@
 
   load();
   render();
-  syncDockPad();
-  window.addEventListener('load', syncDockPad);
 })();
 </script>
 </body>
