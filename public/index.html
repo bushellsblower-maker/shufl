@@ -213,10 +213,14 @@
     font-size: 16px;
     font-weight: 600;
     letter-spacing: 0.04em;
-    text-transform: uppercase;
+    text-transform: none;
     text-align: center;
     padding: 6px 4px;
     outline: none;
+  }
+  .name-input::placeholder {
+    color: rgba(163, 156, 144, 0.45);
+    font-weight: 500;
   }
   .name-input:focus { border-bottom-color: var(--accent); }
   .score-big {
@@ -748,7 +752,7 @@
     <section class="panel active" id="panel-play">
       <div class="card scoreboard">
         <div class="team p1 selected has-hammer" id="team1" data-team="0">
-          <input class="name-input" id="name1" value="Team A" maxlength="18" aria-label="Team name" autocomplete="off">
+          <input class="name-input" id="name1" value="TEAM A" maxlength="18" aria-label="Team name" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="TEAM A">
           <div class="score-big" id="score1">0</div>
           <div class="round-pts" id="round1">This round: <strong>0</strong></div>
           <button type="button" class="hammer-badge on" id="hammerBtn0" data-hammer="0" aria-label="Hammer, shoots last">🔨 Hammer</button>
@@ -758,7 +762,7 @@
           <div class="target-chip">Target<strong id="targetDisplay">15</strong></div>
         </div>
         <div class="team p2" id="team2" data-team="1">
-          <input class="name-input" id="name2" value="Team B" maxlength="18" aria-label="Team name" autocomplete="off">
+          <input class="name-input" id="name2" value="TEAM B" maxlength="18" aria-label="Team name" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="TEAM B">
           <div class="score-big" id="score2">0</div>
           <div class="round-pts" id="round2">This round: <strong>0</strong></div>
           <button type="button" class="hammer-badge" id="hammerBtn1" data-hammer="1" aria-label="Hammer, shoots last">🔨 Hammer</button>
@@ -843,7 +847,7 @@
   var STORAGE_KEY = 'shuffleboard-scoreboard-v1';
 
   var state = {
-    names: ['Team A', 'Team B'],
+    names: ['TEAM A', 'TEAM B'],
     scores: [0, 0],
     roundPts: [0, 0],
     hammer: 0,
@@ -866,7 +870,7 @@
       if (data.current) {
         Object.assign(state, data.current);
         // ensure arrays
-        state.names = data.current.names || state.names;
+        state.names = defaultedNames(data.current.names || state.names);
         state.scores = data.current.scores || [0, 0];
         state.roundPts = data.current.roundPts || [0, 0];
         state.rounds = data.current.rounds || [];
@@ -1025,7 +1029,7 @@
     maybeDeclareWinner();
     if (state.gameOver) {
       archiveIfWon();
-      toast(state.names[state.winner] + ' wins!');
+      toast(shownName(state.names[state.winner], state.winner) + ' wins!');
     }
 
     render();
@@ -1094,7 +1098,7 @@
     state.gameOver = false;
     state.winner = null;
     state.startedAt = Date.now();
-    state.names = keepNames;
+    state.names = defaultedNames(keepNames);
     render();
     save();
     toast('New game started');
@@ -1131,7 +1135,38 @@
     } catch (e) { return ''; }
   }
 
+  function nameIsBlank(value) {
+    return value == null || String(value).trim() === '';
+  }
+
+  // Defaults apply when a match starts or a save has no name. Never while typing.
+  function defaultedNames(names) {
+    var next = [names && names[0], names && names[1]];
+    next[0] = nameIsBlank(next[0]) ? 'TEAM A' : String(next[0]).toUpperCase();
+    next[1] = nameIsBlank(next[1]) ? 'TEAM B' : String(next[1]).toUpperCase();
+    return next;
+  }
+
+  function shownName(value, index) {
+    return nameIsBlank(value) ? (index === 0 ? 'TEAM A' : 'TEAM B') : value;
+  }
+
+  function upperName(input) {
+    var start = input.selectionStart;
+    var end = input.selectionEnd;
+    var next = input.value.toUpperCase();
+    if (input.value !== next) {
+      input.value = next;
+      try {
+        if (start != null) input.setSelectionRange(start, end);
+      } catch (e) { /* number inputs */ }
+    }
+    return input.value;
+  }
+
   function render() {
+    // Only write when state actually differs, so clearing the last letter
+    // does not snap the caret or put the default name back.
     if ($('name1').value !== state.names[0]) $('name1').value = state.names[0];
     if ($('name2').value !== state.names[1]) $('name2').value = state.names[1];
     $('score1').textContent = state.scores[0];
@@ -1173,7 +1208,7 @@
     var banner = $('winnerBanner');
     if (state.gameOver && state.winner !== null) {
       banner.classList.add('show');
-      $('winnerName').textContent = state.names[state.winner];
+      $('winnerName').textContent = shownName(state.names[state.winner], state.winner);
     } else {
       banner.classList.remove('show');
     }
@@ -1245,13 +1280,13 @@
         result = g.scores[0] + ' – ' + g.scores[1] +
           (g.incomplete ? ' <span style="color:var(--warn)">(incomplete)</span>' : ' <span style="color:var(--muted)">(tie)</span>');
       } else {
-        result = '<span class="w">' + g.names[g.winner] + ' won</span> · ' +
+        result = '<span class="w">' + shownName(g.names[g.winner], g.winner) + ' won</span> · ' +
           g.scores[0] + ' – ' + g.scores[1] + ' (to ' + g.target + ')';
       }
       html += '<div class="hist-card">' +
         '<div class="head"><span>' + formatDate(g.endedAt || g.startedAt) + '</span>' +
         '<span>' + (g.rounds ? g.rounds.length : 0) + ' rounds</span></div>' +
-        '<div class="names">' + g.names[0] + ' vs ' + g.names[1] + '</div>' +
+        '<div class="names">' + shownName(g.names[0], 0) + ' vs ' + shownName(g.names[1], 1) + '</div>' +
         '<div class="result">' + result + '</div>' +
         '</div>';
     });
@@ -1260,12 +1295,12 @@
 
   // Events
   $('name1').addEventListener('input', function () {
-    state.names[0] = this.value || 'Team A';
+    state.names[0] = upperName(this);
     render();
     save();
   });
   $('name2').addEventListener('input', function () {
-    state.names[1] = this.value || 'Team B';
+    state.names[1] = upperName(this);
     render();
     save();
   });

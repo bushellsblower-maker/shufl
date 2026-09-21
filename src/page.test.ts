@@ -22,8 +22,14 @@ test("primary flow is one page with on-board scoring", () => {
   assert.equal(html.includes('id="for2"'), false);
   assert.equal(html.includes(">Team A<"), false);
   assert.equal(html.includes(">Team B<"), false);
-  assert.equal(html.split('value="Team A"').length - 1, 1);
-  assert.equal(html.split('value="Team B"').length - 1, 1);
+  assert.equal(html.split('value="TEAM A"').length - 1, 1);
+  assert.equal(html.split('value="TEAM B"').length - 1, 1);
+  assert.equal(html.includes('placeholder="TEAM A"'), true);
+  assert.equal(html.includes('placeholder="TEAM B"'), true);
+  assert.equal(html.includes("this.value || 'Team A'"), false);
+  assert.equal(html.includes("this.value || 'Team B'"), false);
+  assert.match(html, /state\.names\[0\] = upperName\(this\);/);
+  assert.match(html, /state\.names\[1\] = upperName\(this\);/);
   assert.equal(html.includes('data-team="0"'), true);
   assert.equal(html.includes('data-team="1"'), true);
   assert.equal(html.includes('class="score-dock for-p1"'), true);
