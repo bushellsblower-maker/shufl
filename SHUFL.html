@@ -108,15 +108,17 @@
   .brand {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    text-align: center;
     gap: 2px;
     min-width: 0;
-    flex: 0 1 auto;
+    flex: 1 1 auto;
     padding: 6px 12px 7px;
     background: rgba(18, 19, 22, 0.9);
     border: 2px solid var(--border);
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 6px 16px rgba(0, 0, 0, 0.35);
   }
-  .btn.header-rules {
+  .btn.header-btn {
     flex: 0 0 auto;
     align-self: center;
     min-height: 40px;
@@ -884,7 +886,8 @@
     }
     header h1 { font-size: 1.35rem; letter-spacing: 0.1em; }
     .brand p { font-size: 0.58rem; letter-spacing: 0.12em; }
-    .btn.header-rules { min-height: 40px; padding: 6px 10px; font-size: 0.78rem; }
+    .brand { justify-content: center; }
+    .btn.header-btn { min-height: 40px; padding: 6px 10px; font-size: 0.78rem; }
 
     main { gap: 8px; padding-bottom: 8px; }
     .panel { gap: 8px; }
@@ -965,6 +968,9 @@
     .round-card-n, .round-card-tot { font-size: 0.58rem; }
     .rc-name { font-size: 0.52rem; }
     .rc-pts { font-size: 0.82rem; }
+    header h1 { font-size: 1.2rem; }
+    .btn.header-btn { min-height: 36px; padding: 4px 6px; font-size: 0.68rem; letter-spacing: 0.04em; }
+    .coin { width: 128px; height: 128px; }
     .modal h2 { font-size: 1.05rem; }
     .rules-body li { font-size: 0.92rem; }
   }
@@ -1003,6 +1009,18 @@
     0% { transform: translate3d(0, -12px, 0) rotate(0deg); opacity: 1; }
     100% { transform: translate3d(var(--drift, 0px), 72vh, 0) rotate(240deg); opacity: 0; }
   }
+  @keyframes coin-heads {
+    0% { transform: translateY(28px) rotateY(0deg) scale(0.86); }
+    38% { transform: translateY(-52px) rotateY(720deg) scale(1.06); }
+    72% { transform: translateY(-6px) rotateY(1440deg) scale(1); }
+    100% { transform: translateY(0) rotateY(1800deg) scale(1); }
+  }
+  @keyframes coin-tails {
+    0% { transform: translateY(28px) rotateY(0deg) scale(0.86); }
+    38% { transform: translateY(-52px) rotateY(720deg) scale(1.06); }
+    72% { transform: translateY(-6px) rotateY(1440deg) scale(1); }
+    100% { transform: translateY(0) rotateY(1980deg) scale(1); }
+  }
 
   .celebrate-layer {
     position: fixed;
@@ -1020,7 +1038,92 @@
     animation: confetti-fall 1.15s ease-in forwards;
   }
 
-  body.modal-open { overflow: hidden; }
+  body.modal-open,
+  body.coin-open { overflow: hidden; }
+  .coin-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 140;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding:
+      max(16px, env(safe-area-inset-top))
+      max(16px, env(safe-area-inset-right))
+      max(16px, env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
+    background: rgba(6, 7, 10, 0.62);
+    perspective: 900px;
+  }
+  .coin-overlay[hidden] { display: none !important; }
+  .coin-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+  .coin {
+    width: 148px;
+    height: 148px;
+    position: relative;
+    transform-style: preserve-3d;
+  }
+  .coin.spin-heads { animation: coin-heads 1.15s cubic-bezier(0.18, 0.7, 0.2, 1) forwards; }
+  .coin.spin-tails { animation: coin-tails 1.15s cubic-bezier(0.18, 0.7, 0.2, 1) forwards; }
+  .coin-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      repeating-conic-gradient(from 0deg, rgba(255, 236, 190, 0.7) 0 7deg, rgba(70, 46, 16, 0.55) 7deg 14deg);
+    box-shadow:
+      inset 0 0 0 7px #3a2912,
+      0 16px 28px rgba(0, 0, 0, 0.45);
+  }
+  .coin-face span {
+    width: 74%;
+    height: 74%;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--display);
+    font-size: 1.15rem;
+    letter-spacing: 0.08em;
+    color: #1a1408;
+    background: radial-gradient(circle at 34% 30%, #f8edd2 0%, #e0b15a 42%, #8d6230 78%, #4e3414 100%);
+    box-shadow: inset 0 0 0 2px rgba(255, 244, 214, 0.7);
+  }
+  .coin-face.heads { transform: rotateY(0deg) translateZ(1px); }
+  .coin-face.tails { transform: rotateY(180deg) translateZ(1px); }
+  .coin-face.tails span {
+    color: #10141a;
+    background: radial-gradient(circle at 34% 30%, #f4f7fb 0%, #c5ced8 40%, #6d7884 76%, #2c343c 100%);
+  }
+  .coin-call {
+    min-height: 1.2em;
+    margin: 0;
+    font-family: var(--display);
+    font-size: clamp(1.6rem, 8vw, 2.4rem);
+    letter-spacing: 0.14em;
+    color: var(--accent);
+    text-shadow: 0 2px 0 #1a1408, 0 8px 16px rgba(0, 0, 0, 0.45);
+  }
+  .coin-hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .coin-hint[hidden] { display: none !important; }
   .modal-backdrop {
     position: fixed;
     inset: 0;
@@ -1138,7 +1241,10 @@
     .team.selected::after,
     .celebrate-layer i,
     .banner.celebrate .winner-line,
+    .coin.spin-heads,
+    .coin.spin-tails,
     .team.win-pulse { animation: none !important; }
+    .coin.spin-tails { transform: rotateY(180deg); }
     .team.selected::after { display: none; }
     .celebrate-layer { display: none; }
   }
@@ -1148,11 +1254,12 @@
   <div class="bg-photo" aria-hidden="true"></div>
   <div class="bg-shade" aria-hidden="true"></div>
   <header>
+    <button type="button" class="btn header-btn" id="btnCoinToss">Coin Toss</button>
     <div class="brand">
       <h1>SHUFL</h1>
       <p>Shuffleboard scorekeeper</p>
     </div>
-    <button type="button" class="btn header-rules" id="btnRules" aria-haspopup="dialog" aria-controls="rulesModal">Rules</button>
+    <button type="button" class="btn header-btn" id="btnRules" aria-haspopup="dialog" aria-controls="rulesModal">Rules</button>
   </header>
 
   <main>
@@ -1244,6 +1351,17 @@
   </main>
 
   <div class="celebrate-layer" id="celebrateLayer" aria-hidden="true"></div>
+
+  <div class="coin-overlay" id="coinOverlay" hidden>
+    <div class="coin-stage">
+      <div class="coin" id="coin" aria-hidden="true">
+        <div class="coin-face heads"><span>Heads</span></div>
+        <div class="coin-face tails"><span>Tails</span></div>
+      </div>
+      <p class="coin-call" id="coinCall" aria-live="polite"></p>
+      <p class="coin-hint" id="coinHint" hidden>Tap to close</p>
+    </div>
+  </div>
 
   <div class="modal-backdrop" id="confirmModal" hidden>
     <div class="modal card" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
@@ -2301,6 +2419,65 @@
     });
   }
 
+  var coinSettled = false;
+  var coinDismissTimer = 0;
+  var coinLandTimer = 0;
+
+  function closeCoin() {
+    if (!coinSettled) return;
+    clearTimeout(coinDismissTimer);
+    clearTimeout(coinLandTimer);
+    var overlay = $('coinOverlay');
+    if (overlay) overlay.hidden = true;
+    document.body.classList.remove('coin-open');
+    coinSettled = false;
+  }
+
+  function showCoinResult(side) {
+    if (coinSettled) return;
+    coinSettled = true;
+    $('coinCall').textContent = side === 'heads' ? 'Heads' : 'Tails';
+    $('coinHint').hidden = false;
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        navigator.vibrate(16);
+      }
+    } catch (e) { /* no vibration */ }
+    clearTimeout(coinDismissTimer);
+    coinDismissTimer = setTimeout(closeCoin, 1200);
+  }
+
+  function tossCoin() {
+    var overlay = $('coinOverlay');
+    if (!overlay || !overlay.hidden) return;
+    clearTimeout(coinDismissTimer);
+    clearTimeout(coinLandTimer);
+    var side = Math.random() < 0.5 ? 'heads' : 'tails';
+    coinSettled = false;
+    $('coinCall').textContent = '';
+    $('coinHint').hidden = true;
+    var coin = $('coin');
+    coin.className = 'coin';
+    overlay.hidden = false;
+    document.body.classList.add('coin-open');
+    void coin.offsetWidth;
+    coin.classList.add(side === 'heads' ? 'spin-heads' : 'spin-tails');
+    var reduce = false;
+    try {
+      reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (e) { reduce = false; }
+    function finish() { showCoinResult(side); }
+    if (reduce) finish();
+    else {
+      coinLandTimer = setTimeout(finish, 1250);
+      coin.addEventListener('animationend', function onEnd(ev) {
+        if (ev.target !== coin) return;
+        coin.removeEventListener('animationend', onEnd);
+        finish();
+      });
+    }
+  }
+
   // Events
   $('name1').addEventListener('input', function () {
     state.names[0] = upperName(this);
@@ -2391,6 +2568,8 @@
   $('confirmModal').addEventListener('click', function (e) {
     if (e.target === $('confirmModal')) closeConfirm(false);
   });
+  $('btnCoinToss').addEventListener('click', tossCoin);
+  $('coinOverlay').addEventListener('click', closeCoin);
   $('btnRules').addEventListener('click', openRules);
   $('rulesDone').addEventListener('click', closeRules);
   $('rulesModal').addEventListener('click', function (e) {
@@ -2425,6 +2604,11 @@
     if (rulesOpen()) {
       e.preventDefault();
       closeRules();
+      return;
+    }
+    if (coinSettled && !$('coinOverlay').hidden) {
+      e.preventDefault();
+      closeCoin();
     }
   });
 

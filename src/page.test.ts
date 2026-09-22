@@ -116,6 +116,27 @@ test("rules button opens an in-app rules modal", () => {
   assert.equal(html.includes('id="confirmOk">Confirm</button>'), true);
 });
 
+test("coin toss sits left of the banner and only covers the board while it flips", () => {
+  const html = page("public/index.html");
+  const header = html.slice(html.indexOf("<header>"), html.indexOf("</header>"));
+  assert.ok(header.indexOf('id="btnCoinToss"') >= 0);
+  assert.ok(header.indexOf('id="btnCoinToss"') < header.indexOf("<h1>SHUFL</h1>"));
+  assert.ok(header.indexOf("<h1>SHUFL</h1>") < header.indexOf('id="btnRules"'));
+  assert.match(header, />Coin Toss<\/button>/);
+  assert.match(html, /id="coinOverlay" hidden/);
+  assert.match(html, /\.coin-overlay\s*\{[^}]*z-index:\s*140/);
+  assert.match(html, /\.coin-overlay\[hidden\]\s*\{\s*display:\s*none !important/);
+  assert.match(html, /Math\.random\(\) < 0\.5 \? 'heads' : 'tails'/);
+  assert.match(html, /navigator\.vibrate\(16\)/);
+  assert.match(html, /coinDismissTimer = setTimeout\(closeCoin, 1200\)/);
+  assert.match(html, /if \(!coinSettled\) return;/);
+  const tossStart = html.indexOf("function tossCoin()");
+  const tossEnd = html.indexOf("$('name1').addEventListener");
+  assert.ok(tossStart > 0 && tossEnd > tossStart);
+  assert.equal(html.slice(tossStart, tossEnd).includes("noteScoringStarted"), false);
+  assert.equal(html.slice(tossStart, tossEnd).includes("setupLocked"), false);
+});
+
 test("hammer mode defaults to take turns and can keep the winner", () => {
   const html = page("public/index.html");
   assert.equal(html.includes('id="hammerModeSeg"'), true);
