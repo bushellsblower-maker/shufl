@@ -116,6 +116,27 @@ test("rules button opens an in-app rules modal", () => {
   assert.equal(html.includes('id="confirmOk">Confirm</button>'), true);
 });
 
+test("coin toss sits left of the banner and only covers the board while it flips", () => {
+  const html = page("public/index.html");
+  const header = html.slice(html.indexOf("<header>"), html.indexOf("</header>"));
+  assert.ok(header.indexOf('id="btnCoinToss"') >= 0);
+  assert.ok(header.indexOf('id="btnCoinToss"') < header.indexOf("<h1>SHUFL</h1>"));
+  assert.ok(header.indexOf("<h1>SHUFL</h1>") < header.indexOf('id="btnRules"'));
+  assert.match(header, />Coin Toss<\/button>/);
+  assert.match(html, /id="coinOverlay" hidden/);
+  assert.match(html, /\.coin-overlay\s*\{[^}]*z-index:\s*140/);
+  assert.match(html, /\.coin-overlay\[hidden\]\s*\{\s*display:\s*none !important/);
+  assert.match(html, /Math\.random\(\) < 0\.5 \? 'heads' : 'tails'/);
+  assert.match(html, /navigator\.vibrate\(16\)/);
+  assert.match(html, /coinDismissTimer = setTimeout\(closeCoin, 1200\)/);
+  assert.match(html, /if \(!coinSettled\) return;/);
+  const tossStart = html.indexOf("function tossCoin()");
+  const tossEnd = html.indexOf("$('name1').addEventListener");
+  assert.ok(tossStart > 0 && tossEnd > tossStart);
+  assert.equal(html.slice(tossStart, tossEnd).includes("noteScoringStarted"), false);
+  assert.equal(html.slice(tossStart, tossEnd).includes("setupLocked"), false);
+});
+
 test("hammer mode defaults to take turns and can keep the winner", () => {
   const html = page("public/index.html");
   assert.equal(html.includes('id="hammerModeSeg"'), true);
@@ -144,6 +165,19 @@ test("hammer mode defaults to take turns and can keep the winner", () => {
   assert.equal(controls.includes("hammer-mode-row"), false);
   assert.match(html, /\.controls-row\s*\{[^}]*flex-wrap:\s*nowrap/);
   assert.match(html, /@media \(max-width: 340px\)[\s\S]*\.controls-row\s*\{[^}]*flex-wrap:\s*wrap/);
+});
+
+test("round card running totals use the team board colours", () => {
+  const html = page("public/index.html");
+  assert.match(
+    html,
+    /<span class="tot-a">' \+ r\.totals\[0\] \+ '<\/span><span class="tot-sep">–<\/span><span class="tot-b">' \+ r\.totals\[1\] \+ '<\/span>/
+  );
+  assert.match(html, /\.round-card-tot \.tot-a\s*\{[^}]*color:\s*#e7a0b0/);
+  assert.match(html, /\.round-card-tot \.tot-sep\s*\{[^}]*color:\s*var\(--accent\)/);
+  assert.match(html, /\.round-card-tot \.tot-b\s*\{[^}]*color:\s*#9dbeff/);
+  assert.match(html, /\.team\.p1\s*\{[^}]*border-color:\s*#e7a0b0/);
+  assert.match(html, /\.team\.p2\s*\{[^}]*border-color:\s*#9dbeff/);
 });
 
 test("round cards sit three across and the selected side keeps rippling", () => {
@@ -184,4 +218,55 @@ test("history is a modal with per-game delete", () => {
   const archiveEnd = html.indexOf("function publishGame");
   assert.ok(archiveStart > 0 && archiveEnd > archiveStart);
   assert.match(html.slice(archiveStart, archiveEnd), /publishGame\(entry\)/);
+});
+
+test("target and hammer lock after the first points and unlock on a fresh match", () => {
+  const html = page("public/index.html");
+  assert.match(html, /function scoringStarted\(\)/);
+  assert.match(html, /function matchSetupLocked\(\)/);
+  assert.match(html, /function noteScoringStarted\(\)/);
+  assert.match(html, /setupLocked: false/);
+  assert.match(html, /setupLocked: state\.setupLocked === true/);
+  const addStart = html.indexOf("function addPoints(pts)");
+  const addEnd = html.indexOf("function clearRound");
+  assert.match(html.slice(addStart, addEnd), /if \(pts > 0\) noteScoringStarted\(\);/);
+  const endStart = html.indexOf("function endRound()");
+  const endEnd = html.indexOf("function nextHammer");
+  assert.match(html.slice(endStart, endEnd), /noteScoringStarted\(\);/);
+  const newStart = html.indexOf("function startNewGame()");
+  const newEnd = html.indexOf("function resetScores()");
+  assert.match(html.slice(newStart, newEnd), /state\.setupLocked = false/);
+  const resetStart = html.indexOf("function resetScores()");
+  const resetEnd = html.indexOf("function formatDate");
+  assert.match(html.slice(resetStart, resetEnd), /state\.setupLocked = false/);
+  assert.match(html, /b\.disabled = setupLocked/);
+  assert.match(html, /\$\('customTarget'\)\.disabled = setupLocked/);
+  assert.match(html, /controls\.classList\.toggle\('is-locked', setupLocked\)/);
+  assert.match(html, /\.controls-row\.is-locked\s*\{[^}]*opacity:\s*0\.45/);
+  assert.match(html, /\.controls-row\.is-locked button,\s*\.controls-row\.is-locked input\s*\{[^}]*pointer-events:\s*none/);
+  assert.match(html, /if \(matchSetupLocked\(\)\) return;/);
+  const nameStart = html.indexOf("$('name1').addEventListener");
+  const nameEnd = html.indexOf("document.querySelectorAll('#targetSeg button')");
+  assert.equal(html.slice(nameStart, nameEnd).includes("noteScoringStarted"), false);
+  const historyStart = html.indexOf("function openHistory()");
+  const historyEnd = html.indexOf("function closeHistory()");
+  assert.equal(html.slice(historyStart, historyEnd).includes("noteScoringStarted"), false);
+  assert.equal(html.slice(historyStart, historyEnd).includes("setupLocked"), false);
+});
+
+test("confirm dialog stacks above the history modal", () => {
+  const html = page("public/index.html");
+  assert.match(html, /#rulesModal,\s*#historyModal\s*\{\s*z-index:\s*200/);
+  assert.match(html, /#confirmModal\s*\{\s*z-index:\s*400/);
+  assert.ok(html.indexOf('id="confirmModal"') < html.indexOf('id="historyModal"'));
+  assert.match(html, /function pinConfirmOnTop\(on\)/);
+  assert.match(html, /el\.inert = !!\(on && !el\.hidden\)/);
+  const askStart = html.indexOf("function askConfirm");
+  const askEnd = html.indexOf("function pinConfirmOnTop");
+  assert.match(html.slice(askStart, askEnd), /pinConfirmOnTop\(true\)/);
+  const closeStart = html.indexOf("function closeConfirm");
+  const closeEnd = html.indexOf("function rulesOpen");
+  assert.match(html.slice(closeStart, closeEnd), /pinConfirmOnTop\(false\)/);
+  const histClick = html.indexOf("$('historyModal').addEventListener('click'");
+  assert.match(html.slice(histClick, histClick + 280), /if \(!\$\('confirmModal'\)\.hidden\) return;/);
 });
