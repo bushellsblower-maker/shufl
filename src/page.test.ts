@@ -37,12 +37,13 @@ test("primary flow is one page with on-board scoring", () => {
   for (const id of ["btnUndo", "btnEndRound", "btnClearRound", "btnHistory", "btnNewGame", "btnResetGame", "roundLog"]) {
     assert.equal(html.includes(`id="${id}"`), true, id);
   }
-  for (const pts of ["1", "2", "3", "4", "5"]) {
+  for (const pts of ["1", "2", "3", "4"]) {
     assert.equal(html.includes(`data-pts="${pts}"`), true, pts);
   }
+  assert.equal(html.includes('data-pts="5"'), false);
   assert.match(
     html,
-    /<button type="button" class="zone-btn z5" data-pts="5" aria-label="Add 5, hanger">Hanger<\/button>/
+    /<button type="button" class="zone-btn z5" data-pts="1" aria-label="Add 1, hanger bonus">Hanger<small>\+1<\/small><\/button>/
   );
   assert.match(html, /\.zones\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
   const dockBlocks = html.match(/\.score-dock\s*\{[^}]*\}/g) || [];
@@ -104,7 +105,7 @@ test("rules button opens an in-app rules modal", () => {
     "Zone 3: 3 points",
     "Zone 4: 4 points",
     "A weight touching a zone line counts as the lower zone.",
-    "A hanger (any part hanging over the far end, not the side, without falling) scores 5 points.",
+    "A hanger (any part hanging over the far end, not the side, without falling) scores +1 on top of that weight’s zone score (e.g. zone 1 hanger = 2; zone 4 hanger = 5).",
     "After the round is scored, play the next round from the other end.",
     "First to the agreed total (usually 15 or 21) wins.",
     "The hammer is the last weight of the round. Either the round winner keeps it, or the teams take turns.",
