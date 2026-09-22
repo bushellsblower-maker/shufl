@@ -472,6 +472,14 @@
     padding: 8px 10px;
     white-space: nowrap;
   }
+  .controls-row.is-locked {
+    opacity: 0.45;
+  }
+  .controls-row.is-locked button,
+  .controls-row.is-locked input {
+    cursor: not-allowed;
+    pointer-events: none;
+  }
 
   /* Zone buttons */
   .zones-title {
@@ -1028,6 +1036,9 @@
     background: rgba(6, 7, 10, 0.72);
   }
   .modal-backdrop[hidden] { display: none !important; }
+  #rulesModal,
+  #historyModal { z-index: 200; }
+  #confirmModal { z-index: 400; }
   .modal.card {
     width: min(420px, 100%);
     padding: 16px 14px 14px;
@@ -1312,6 +1323,7 @@
     gameOver: false,
     winner: null,
     startedAt: Date.now(),
+    setupLocked: false,
     history: []       // past completed games
   };
 
@@ -1329,6 +1341,7 @@
         state.rounds = data.current.rounds || [];
         state.undoStack = data.current.undoStack || [];
         state.hammerMode = data.current.hammerMode === 'winner' ? 'winner' : 'turns';
+        state.setupLocked = data.current.setupLocked === true || scoringStarted();
       }
       if (Array.isArray(data.history)) state.history = data.history;
     } catch (e) { /* ignore corrupt */ }
@@ -1350,7 +1363,8 @@
           undoStack: state.undoStack,
           gameOver: state.gameOver,
           winner: state.winner,
-          startedAt: state.startedAt
+          startedAt: state.startedAt,
+          setupLocked: state.setupLocked === true
         },
         history: state.history
       };
@@ -1454,6 +1468,20 @@
     } catch (e) { /* offline */ }
   }
 
+  function scoringStarted() {
+    if (state.scores[0] > 0 || state.scores[1] > 0) return true;
+    if (state.roundPts[0] > 0 || state.roundPts[1] > 0) return true;
+    return !!(state.rounds && state.rounds.length);
+  }
+
+  function matchSetupLocked() {
+    return state.setupLocked === true || scoringStarted();
+  }
+
+  function noteScoringStarted() {
+    state.setupLocked = true;
+  }
+
   function addPoints(pts) {
     if (state.gameOver) {
       toast('Game over — start a new game');
@@ -1461,6 +1489,7 @@
     }
     var who = state.scoringFor;
     state.roundPts[who] += pts;
+    if (pts > 0) noteScoringStarted();
     pushUndo({ type: 'pts', who: who, pts: pts });
     render();
     save();
@@ -1488,6 +1517,7 @@
       toast('No points this round');
       return;
     }
+    noteScoringStarted();
 
     var prevScores = state.scores.slice();
     var prevHammer = state.hammer;
@@ -1616,6 +1646,7 @@
     state.gameOver = false;
     state.winner = null;
     state.startedAt = Date.now();
+    state.setupLocked = false;
     state.names = defaultedNames(keepNames);
     render();
     save();
@@ -1638,6 +1669,7 @@
       state.gameOver = false;
       state.winner = null;
       state.startedAt = Date.now();
+      state.setupLocked = false;
       render();
       save();
       toast('Scores reset');
@@ -1743,6 +1775,19 @@
     $('btnUndo').disabled = state.undoStack.length === 0;
     $('btnEndRound').disabled = state.gameOver;
 
+    var setupLocked = matchSetupLocked();
+    document.querySelectorAll('#targetSeg button, #hammerModeSeg button').forEach(function (b) {
+      b.disabled = setupLocked;
+    });
+    $('customTarget').disabled = setupLocked;
+    var controls = document.querySelector('.controls-row');
+    if (controls) {
+      controls.classList.toggle('is-locked', setupLocked);
+      controls.setAttribute('aria-disabled', setupLocked ? 'true' : 'false');
+    }
+    $('targetSeg').setAttribute('aria-disabled', setupLocked ? 'true' : 'false');
+    $('hammerModeSeg').setAttribute('aria-disabled', setupLocked ? 'true' : 'false');
+
     renderRoundLog();
     renderChart();
   }
@@ -1821,8 +1866,17 @@
       ok.className = 'btn ' + (opts.danger ? 'danger' : 'primary');
       confirmResolver = resolve;
       modal.hidden = false;
+      pinConfirmOnTop(true);
       document.body.classList.add('modal-open');
       ok.focus();
+    });
+  }
+
+  function pinConfirmOnTop(on) {
+    ['historyModal', 'rulesModal'].forEach(function (id) {
+      var el = $(id);
+      if (!el) return;
+      el.inert = !!(on && !el.hidden);
     });
   }
 
@@ -1831,7 +1885,18 @@
     confirmResolver = null;
     var modal = $('confirmModal');
     if (modal) modal.hidden = true;
+    pinConfirmOnTop(false);
     if (!rulesOpen() && !historyOpen()) document.body.classList.remove('modal-open');
+    else if (historyOpen()) {
+      var historyDialog = $('historyModal').querySelector('[role="dialog"]');
+      if (historyDialog) {
+        historyDialog.setAttribute('tabindex', '-1');
+        historyDialog.focus();
+      }
+    } else if (rulesOpen()) {
+      var rulesDone = $('rulesDone');
+      if (rulesDone) rulesDone.focus();
+    }
     if (resolve) resolve(!!result);
   }
 
@@ -2090,6 +2155,7 @@
   }
 
   function commitTarget(next) {
+    if (matchSetupLocked()) return;
     var wasOver = state.gameOver;
     state.target = next;
     maybeDeclareWinner();
@@ -2249,12 +2315,14 @@
 
   document.querySelectorAll('#targetSeg button').forEach(function (b) {
     b.addEventListener('click', function () {
+      if (matchSetupLocked()) return;
       $('customTarget').value = '';
       commitTarget(parseInt(b.getAttribute('data-target'), 10));
     });
   });
 
   $('customTarget').addEventListener('change', function () {
+    if (matchSetupLocked()) return;
     var v = parseInt(this.value, 10);
     if (!v || v < 1) return;
     commitTarget(Math.min(99, v));
@@ -2282,6 +2350,7 @@
 
   document.querySelectorAll('#hammerModeSeg button').forEach(function (b) {
     b.addEventListener('click', function () {
+      if (matchSetupLocked()) return;
       state.hammerMode = b.getAttribute('data-hammer-mode') === 'winner' ? 'winner' : 'turns';
       render();
       save();
@@ -2310,6 +2379,7 @@
   $('btnHistory').addEventListener('click', openHistory);
   $('historyDone').addEventListener('click', closeHistory);
   $('historyModal').addEventListener('click', function (e) {
+    if (!$('confirmModal').hidden) return;
     if (e.target === $('historyModal')) closeHistory();
     var retry = e.target.closest && e.target.closest('#historyRetry');
     if (retry) loadHistory();
@@ -2327,6 +2397,20 @@
     if (e.target === $('rulesModal')) closeRules();
   });
   document.addEventListener('keydown', function (e) {
+    if (e.key === 'Tab' && !$('confirmModal').hidden) {
+      var focusable = $('confirmModal').querySelectorAll('button:not([disabled])');
+      if (!focusable.length) return;
+      var first = focusable[0];
+      var last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+      return;
+    }
     if (e.key !== 'Escape') return;
     if (!$('confirmModal').hidden) {
       e.preventDefault();

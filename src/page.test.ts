@@ -185,3 +185,54 @@ test("history is a modal with per-game delete", () => {
   assert.ok(archiveStart > 0 && archiveEnd > archiveStart);
   assert.match(html.slice(archiveStart, archiveEnd), /publishGame\(entry\)/);
 });
+
+test("target and hammer lock after the first points and unlock on a fresh match", () => {
+  const html = page("public/index.html");
+  assert.match(html, /function scoringStarted\(\)/);
+  assert.match(html, /function matchSetupLocked\(\)/);
+  assert.match(html, /function noteScoringStarted\(\)/);
+  assert.match(html, /setupLocked: false/);
+  assert.match(html, /setupLocked: state\.setupLocked === true/);
+  const addStart = html.indexOf("function addPoints(pts)");
+  const addEnd = html.indexOf("function clearRound");
+  assert.match(html.slice(addStart, addEnd), /if \(pts > 0\) noteScoringStarted\(\);/);
+  const endStart = html.indexOf("function endRound()");
+  const endEnd = html.indexOf("function nextHammer");
+  assert.match(html.slice(endStart, endEnd), /noteScoringStarted\(\);/);
+  const newStart = html.indexOf("function startNewGame()");
+  const newEnd = html.indexOf("function resetScores()");
+  assert.match(html.slice(newStart, newEnd), /state\.setupLocked = false/);
+  const resetStart = html.indexOf("function resetScores()");
+  const resetEnd = html.indexOf("function formatDate");
+  assert.match(html.slice(resetStart, resetEnd), /state\.setupLocked = false/);
+  assert.match(html, /b\.disabled = setupLocked/);
+  assert.match(html, /\$\('customTarget'\)\.disabled = setupLocked/);
+  assert.match(html, /controls\.classList\.toggle\('is-locked', setupLocked\)/);
+  assert.match(html, /\.controls-row\.is-locked\s*\{[^}]*opacity:\s*0\.45/);
+  assert.match(html, /\.controls-row\.is-locked button,\s*\.controls-row\.is-locked input\s*\{[^}]*pointer-events:\s*none/);
+  assert.match(html, /if \(matchSetupLocked\(\)\) return;/);
+  const nameStart = html.indexOf("$('name1').addEventListener");
+  const nameEnd = html.indexOf("document.querySelectorAll('#targetSeg button')");
+  assert.equal(html.slice(nameStart, nameEnd).includes("noteScoringStarted"), false);
+  const historyStart = html.indexOf("function openHistory()");
+  const historyEnd = html.indexOf("function closeHistory()");
+  assert.equal(html.slice(historyStart, historyEnd).includes("noteScoringStarted"), false);
+  assert.equal(html.slice(historyStart, historyEnd).includes("setupLocked"), false);
+});
+
+test("confirm dialog stacks above the history modal", () => {
+  const html = page("public/index.html");
+  assert.match(html, /#rulesModal,\s*#historyModal\s*\{\s*z-index:\s*200/);
+  assert.match(html, /#confirmModal\s*\{\s*z-index:\s*400/);
+  assert.ok(html.indexOf('id="confirmModal"') < html.indexOf('id="historyModal"'));
+  assert.match(html, /function pinConfirmOnTop\(on\)/);
+  assert.match(html, /el\.inert = !!\(on && !el\.hidden\)/);
+  const askStart = html.indexOf("function askConfirm");
+  const askEnd = html.indexOf("function pinConfirmOnTop");
+  assert.match(html.slice(askStart, askEnd), /pinConfirmOnTop\(true\)/);
+  const closeStart = html.indexOf("function closeConfirm");
+  const closeEnd = html.indexOf("function rulesOpen");
+  assert.match(html.slice(closeStart, closeEnd), /pinConfirmOnTop\(false\)/);
+  const histClick = html.indexOf("$('historyModal').addEventListener('click'");
+  assert.match(html.slice(histClick, histClick + 280), /if \(!\$\('confirmModal'\)\.hidden\) return;/);
+});
