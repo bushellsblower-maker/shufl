@@ -102,6 +102,7 @@ test("rules button opens an in-app rules modal", () => {
     "A hanger (any part hanging over the far end, not the side, without falling) scores 5 points.",
     "After the round is scored, play the next round from the other end.",
     "First to the agreed total (usually 15 or 21) wins.",
+    "The hammer is the last weight of the round. Either the round winner keeps it, or the teams take turns.",
   ];
   let cursor = html.indexOf('id="rulesBody"');
   assert.ok(cursor > 0);
@@ -113,4 +114,28 @@ test("rules button opens an in-app rules modal", () => {
   assert.ok(html.indexOf('id="rulesModal"') > html.indexOf('id="confirmModal"'));
   assert.equal(html.includes('id="confirmCancel">Cancel</button>'), true);
   assert.equal(html.includes('id="confirmOk">Confirm</button>'), true);
+});
+
+test("hammer mode defaults to take turns and can keep the winner", () => {
+  const html = page("public/index.html");
+  assert.equal(html.includes('id="hammerModeSeg"'), true);
+  assert.equal(html.includes('data-hammer-mode="winner"'), true);
+  assert.equal(html.includes('data-hammer-mode="turns"'), true);
+  assert.match(html, />Winner<\/button>/);
+  assert.match(html, />Take Turns<\/button>/);
+  assert.match(html, /hammerMode:\s*'turns'/);
+  assert.match(html, /hammerMode: state\.hammerMode/);
+  assert.match(html, /hammerMode === 'winner' \? 'winner' : 'turns'/);
+  const fnStart = html.indexOf("function nextHammer(r0, r1)");
+  const fnEnd = html.indexOf("function undo()");
+  assert.ok(fnStart > 0 && fnEnd > fnStart);
+  const fn = html.slice(fnStart, fnEnd);
+  assert.match(fn, /state\.hammerMode === 'winner'/);
+  assert.match(fn, /if \(r0 > r1\) return 0;/);
+  assert.match(fn, /if \(r1 > r0\) return 1;/);
+  assert.match(fn, /return state\.hammer;/);
+  assert.match(fn, /return state\.hammer === 0 \? 1 : 0;/);
+  assert.match(html, /state\.hammer = nextHammer\(r0, r1\);/);
+  assert.ok(html.indexOf('id="hammerModeSeg"') > html.indexOf('id="targetSeg"'));
+  assert.ok(html.indexOf('id="hammerModeSeg"') < html.indexOf('id="panel-stats"'));
 });

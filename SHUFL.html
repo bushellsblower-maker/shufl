@@ -434,6 +434,18 @@
     font-size: 16px;
     font-weight: 700;
   }
+  .hammer-mode-row {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(106, 100, 88, 0.45);
+  }
+  .hammer-mode-row .lbl { flex: 0 0 auto; }
+  #hammerModeSeg { flex: 0 1 auto; min-width: 0; margin-left: auto; }
+  #hammerModeSeg button {
+    flex: 0 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+  }
 
   /* Zone buttons */
   .zones-title {
@@ -833,6 +845,12 @@
       padding: 6px 10px;
       min-height: 36px;
     }
+    .hammer-mode-row { margin-top: 6px; padding-top: 6px; }
+    #hammerModeSeg button {
+      padding: 6px 8px;
+      font-size: 0.72rem;
+      letter-spacing: 0.02em;
+    }
     .custom-target { height: 36px; width: 56px; }
 
     .zones { grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -1079,6 +1097,13 @@
             <input class="custom-target" id="customTarget" type="number" min="1" max="99" placeholder="…" title="Custom target" inputmode="numeric">
           </div>
         </div>
+        <div class="row spread hammer-mode-row">
+          <label class="lbl" id="hammerModeLabel">Hammer</label>
+          <div class="seg" id="hammerModeSeg" role="group" aria-labelledby="hammerModeLabel">
+            <button type="button" data-hammer-mode="winner" aria-pressed="false" title="The side that scores the round keeps the hammer">Winner</button>
+            <button type="button" data-hammer-mode="turns" class="on" aria-pressed="true" title="Hammer alternates each round">Take Turns</button>
+          </div>
+        </div>
       </div>
 
     </section>
@@ -1143,6 +1168,7 @@
           <li>A hanger (any part hanging over the far end, not the side, without falling) scores 5 points.</li>
           <li>After the round is scored, play the next round from the other end.</li>
           <li>First to the agreed total (usually 15 or 21) wins.</li>
+          <li>The hammer is the last weight of the round. Either the round winner keeps it, or the teams take turns.</li>
         </ol>
       </div>
       <div class="rules-actions">
@@ -1164,6 +1190,9 @@
     scores: [0, 0],
     roundPts: [0, 0],
     hammer: 0,
+    // 'turns' matches the previous behaviour: hammer alternates every round.
+    // 'winner': the side with more points that round keeps the hammer; a tie leaves it.
+    hammerMode: 'turns',
     scoringFor: 0,
     target: 15,
     roundNum: 1,
@@ -1188,6 +1217,7 @@
         state.roundPts = data.current.roundPts || [0, 0];
         state.rounds = data.current.rounds || [];
         state.undoStack = data.current.undoStack || [];
+        state.hammerMode = data.current.hammerMode === 'winner' ? 'winner' : 'turns';
       }
       if (Array.isArray(data.history)) state.history = data.history;
     } catch (e) { /* ignore corrupt */ }
@@ -1201,6 +1231,7 @@
           scores: state.scores,
           roundPts: state.roundPts,
           hammer: state.hammer,
+          hammerMode: state.hammerMode,
           scoringFor: state.scoringFor,
           target: state.target,
           roundNum: state.roundNum,
@@ -1326,8 +1357,7 @@
 
     state.roundPts = [0, 0];
     state.roundNum += 1;
-    // Hammer typically alternates each frame/round
-    state.hammer = state.hammer === 0 ? 1 : 0;
+    state.hammer = nextHammer(r0, r1);
     state.scoringFor = state.hammer === 0 ? 1 : 0; // non-hammer often scores first visually; keep selectable
 
     pushUndo({
@@ -1346,6 +1376,15 @@
     render();
     save();
     if (state.gameOver && !wasOver) celebrateWin();
+  }
+
+  function nextHammer(r0, r1) {
+    if (state.hammerMode === 'winner') {
+      if (r0 > r1) return 0;
+      if (r1 > r0) return 1;
+      return state.hammer;
+    }
+    return state.hammer === 0 ? 1 : 0;
   }
 
   function undo() {
@@ -1523,6 +1562,11 @@
 
     $('hammerBtn0').classList.toggle('on', state.hammer === 0);
     $('hammerBtn1').classList.toggle('on', state.hammer === 1);
+    document.querySelectorAll('#hammerModeSeg button').forEach(function (b) {
+      var on = b.getAttribute('data-hammer-mode') === state.hammerMode;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
 
     var pad = document.querySelector('.score-dock');
     if (pad) {
@@ -1887,6 +1931,14 @@
   document.querySelectorAll('.hammer-badge').forEach(function (b) {
     b.addEventListener('click', function () {
       state.hammer = parseInt(b.getAttribute('data-hammer'), 10);
+      render();
+      save();
+    });
+  });
+
+  document.querySelectorAll('#hammerModeSeg button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      state.hammerMode = b.getAttribute('data-hammer-mode') === 'winner' ? 'winner' : 'turns';
       render();
       save();
     });
