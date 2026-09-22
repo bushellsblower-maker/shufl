@@ -662,10 +662,14 @@
   .round-card-tot {
     color: var(--muted);
     font-size: 0.62rem;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
     flex: 0 0 auto;
     white-space: nowrap;
   }
+  .round-card-tot .tot-a { color: #e7a0b0; }
+  .round-card-tot .tot-sep { color: var(--accent); }
+  .round-card-tot .tot-b { color: #9dbeff; }
   .round-card-scores {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1922,7 +1926,7 @@
       html += '<article class="round-card">' +
         '<div class="round-card-top">' +
           '<span class="round-card-n">Round ' + r.n + '</span>' +
-          '<span class="round-card-tot">' + r.totals[0] + '–' + r.totals[1] + '</span>' +
+          '<span class="round-card-tot"><span class="tot-a">' + r.totals[0] + '</span><span class="tot-sep">–</span><span class="tot-b">' + r.totals[1] + '</span></span>' +
         '</div>' +
         '<div class="round-card-scores">' +
           '<div class="rc-side a"><span class="rc-name">' + esc(shownName(state.names[0], 0)) + '</span><span class="rc-pts">+' + r.pts[0] + '</span></div>' +

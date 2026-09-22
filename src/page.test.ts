@@ -167,6 +167,19 @@ test("hammer mode defaults to take turns and can keep the winner", () => {
   assert.match(html, /@media \(max-width: 340px\)[\s\S]*\.controls-row\s*\{[^}]*flex-wrap:\s*wrap/);
 });
 
+test("round card running totals use the team board colours", () => {
+  const html = page("public/index.html");
+  assert.match(
+    html,
+    /<span class="tot-a">' \+ r\.totals\[0\] \+ '<\/span><span class="tot-sep">–<\/span><span class="tot-b">' \+ r\.totals\[1\] \+ '<\/span>/
+  );
+  assert.match(html, /\.round-card-tot \.tot-a\s*\{[^}]*color:\s*#e7a0b0/);
+  assert.match(html, /\.round-card-tot \.tot-sep\s*\{[^}]*color:\s*var\(--accent\)/);
+  assert.match(html, /\.round-card-tot \.tot-b\s*\{[^}]*color:\s*#9dbeff/);
+  assert.match(html, /\.team\.p1\s*\{[^}]*border-color:\s*#e7a0b0/);
+  assert.match(html, /\.team\.p2\s*\{[^}]*border-color:\s*#9dbeff/);
+});
+
 test("round cards sit three across and the selected side keeps rippling", () => {
   const html = page("public/index.html");
   assert.match(html, /\.round-log\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
