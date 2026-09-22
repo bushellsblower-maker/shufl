@@ -6,26 +6,38 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { handleApi } from "./api.ts";
 import { parseGameBody, parseLimit } from "./games.ts";
+import { GAMES_SCHEMA } from "./schema.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-function memoryDb() {
+function memoryDb({ migrate = true } = {}) {
   const db = new DatabaseSync(":memory:");
-  db.exec(readFileSync(join(root, "migrations/0001_games.sql"), "utf8"));
+  if (migrate) db.exec(readFileSync(join(root, "migrations/0001_games.sql"), "utf8"));
+  function wrap(statement: ReturnType<DatabaseSync["prepare"]>, values: Array<string | number | null>) {
+    return {
+      async run() {
+        const info = statement.run(...values);
+        return { success: true as const, results: [], meta: { changes: Number(info.changes) || 0 } };
+      },
+      async all() {
+        return { success: true as const, results: statement.all(...values) };
+      },
+      async first() {
+        return statement.get(...values) ?? null;
+      },
+    };
+  }
   return {
+    async exec(sql: string) {
+      db.exec(sql);
+      return { count: 0, duration: 0 };
+    },
     prepare(sql: string) {
       const statement = db.prepare(sql);
       return {
+        ...wrap(statement, []),
         bind(...values: Array<string | number | null>) {
-          return {
-            async run() {
-              const info = statement.run(...values);
-              return { success: true as const, results: [], meta: { changes: Number(info.changes) || 0 } };
-            },
-            async all() {
-              return { success: true as const, results: statement.all(...values) };
-            },
-          };
+          return wrap(statement, values);
         },
       };
     },
@@ -196,6 +208,35 @@ test("api rejects a bad game and an unknown path", async () => {
     new URL("https://shufl.cybush.uk/api/games/nope%20id"),
   );
   assert.equal(badId.status, 400);
+});
+
+test("games schema matches the D1 migration and bootstraps an empty database", async () => {
+  assert.equal(GAMES_SCHEMA.trim(), readFileSync(join(root, "migrations/0001_games.sql"), "utf8").trim());
+  const env = envWith(memoryDb({ migrate: false }));
+  const created = await handleApi(
+    new Request("https://shufl.cybush.uk/api/games", {
+      method: "POST",
+      body: JSON.stringify(finished),
+    }),
+    env,
+    new URL("https://shufl.cybush.uk/api/games"),
+  );
+  assert.equal(created.status, 200);
+  const board = await handleApi(
+    new Request("https://shufl.cybush.uk/api/leaderboard"),
+    env,
+    new URL("https://shufl.cybush.uk/api/leaderboard"),
+  );
+  assert.equal(board.status, 200);
+  const body = (await board.json()) as { leaders: Array<{ name: string; wins: number; games: number }> };
+  assert.deepEqual(
+    body.leaders.find((row) => row.name === "Ada"),
+    { name: "Ada", wins: 1, games: 1 },
+  );
+  assert.deepEqual(
+    body.leaders.find((row) => row.name === "BOB"),
+    { name: "BOB", wins: 0, games: 1 },
+  );
 });
 
 test("worker routes history before assets", () => {

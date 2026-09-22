@@ -21,14 +21,23 @@ describe("parseD1List", () => {
         .id,
       "11111111-1111-1111-1111-111111111111",
     );
+    const noisy = parseD1List(
+      'wrangler banner\n[{"name":"shufl","uuid":"11111111-1111-1111-1111-111111111111"}]\n',
+    );
+    assert.equal(noisy[0].id, "11111111-1111-1111-1111-111111111111");
   });
 });
 
 describe("patchDatabaseId", () => {
-  it("replaces the committed placeholder in wrangler.jsonc", () => {
+  it("inserts a real id when wrangler.jsonc leaves database_id unset", () => {
     const source = readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8");
+    assert.equal(source.includes("00000000-0000-0000-0000-000000000000"), false);
+    assert.equal(source.includes('"database_id"'), false);
     const next = patchDatabaseId(source, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
-    assert.match(next, /"database_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"/);
+    assert.match(next, /"database_name": "shufl",\n\s+"database_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"/);
+    const replaced = patchDatabaseId(next, "bbbbbbbb-bbbb-cccc-dddd-eeeeeeeeeeee");
+    assert.match(replaced, /"database_id": "bbbbbbbb-bbbb-cccc-dddd-eeeeeeeeeeee"/);
+    assert.equal(replaced.includes("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"), false);
     assert.equal(isPlaceholderDatabaseId("00000000-0000-0000-0000-000000000000"), true);
   });
 });

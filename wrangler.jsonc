@@ -37,9 +37,9 @@
     {
       "binding": "DB",
       "database_name": "shufl",
-      // Placeholder. scripts/cf-publish.mjs creates D1 `shufl` if needed and
-      // binds the real UUID for the cloud publish. Do not commit a secret here.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      // No database_id here. `wrangler deploy` provisions D1 `shufl` (Workers
+      // Builds' default command). scripts/cf-publish.mjs writes the real id
+      // before it applies migrations.
       "migrations_dir": "migrations"
     }
   ]

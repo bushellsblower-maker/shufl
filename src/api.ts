@@ -1,4 +1,5 @@
 import { parseGameBody, parseGameId, parseLimit, roundCount } from "./games.ts";
+import { ensureGamesSchema } from "./schema.ts";
 
 const MAX_BODY = 48_000;
 
@@ -165,6 +166,7 @@ async function deleteGame(env: Env, id: string): Promise<Response> {
 
 export async function handleApi(request: Request, env: Env, url: URL): Promise<Response> {
   try {
+    await ensureGamesSchema(env.DB);
     if (url.pathname.startsWith("/api/games/")) {
       if (request.method !== "DELETE") return json({ error: "Method not allowed" }, 405);
       const id = parseGameId(url.pathname.slice("/api/games/".length));
