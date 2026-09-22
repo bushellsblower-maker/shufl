@@ -37,9 +37,14 @@ test("primary flow is one page with on-board scoring", () => {
   for (const id of ["btnUndo", "btnEndRound", "btnClearRound", "btnHistory", "btnNewGame", "btnResetGame", "roundLog"]) {
     assert.equal(html.includes(`id="${id}"`), true, id);
   }
-  for (const pts of ["1", "2", "3", "4"]) {
+  for (const pts of ["1", "2", "3", "4", "5"]) {
     assert.equal(html.includes(`data-pts="${pts}"`), true, pts);
   }
+  assert.match(
+    html,
+    /<button type="button" class="zone-btn z5" data-pts="5" aria-label="Add 5, hanger">Hanger<\/button>/
+  );
+  assert.match(html, /\.zones\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
   const dockBlocks = html.match(/\.score-dock\s*\{[^}]*\}/g) || [];
   assert.ok(dockBlocks.length >= 1);
   for (const block of dockBlocks) {
@@ -122,7 +127,8 @@ test("coin toss sits left of the banner and only covers the board while it flips
   assert.ok(header.indexOf('id="btnCoinToss"') >= 0);
   assert.ok(header.indexOf('id="btnCoinToss"') < header.indexOf("<h1>SHUFL</h1>"));
   assert.ok(header.indexOf("<h1>SHUFL</h1>") < header.indexOf('id="btnRules"'));
-  assert.match(header, />Coin Toss<\/button>/);
+  assert.match(header, />Toss<\/button>/);
+  assert.equal(html.includes("Coin Toss"), false);
   assert.match(html, /id="coinOverlay" hidden/);
   assert.match(html, /\.coin-overlay\s*\{[^}]*z-index:\s*140/);
   assert.match(html, /\.coin-overlay\[hidden\]\s*\{\s*display:\s*none !important/);
