@@ -716,6 +716,23 @@
   }
   .rc-side.a .rc-pts { color: #ffd0da; }
   .rc-side.b .rc-pts { color: #d5e6ff; }
+  .rc-hang {
+    display: block;
+    margin-top: 1px;
+    min-height: 1em;
+    font-size: 0.52rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-variant-numeric: tabular-nums;
+  }
+  .rc-hang.is-empty { visibility: hidden; }
+  .rc-side.a .rc-hang { color: #e7a0b0; }
+  .rc-side.b .rc-hang { color: #9dbeff; }
 
   /* Chart */
   .chart:empty { display: none; }
@@ -981,6 +998,7 @@
     .round-card-n, .round-card-tot { font-size: 0.58rem; }
     .rc-name { font-size: 0.52rem; }
     .rc-pts { font-size: 0.82rem; }
+    .rc-hang { font-size: 0.46rem; }
     header h1 { font-size: 1.2rem; }
     .btn.header-btn { min-height: 36px; padding: 4px 6px; font-size: 0.68rem; letter-spacing: 0.04em; }
     .coin { width: 128px; height: 128px; }
@@ -999,6 +1017,7 @@
     .rc-side { padding: 6px 8px; }
     .rc-name { font-size: 0.68rem; }
     .rc-pts { font-size: 1.15rem; }
+    .rc-hang { font-size: 0.68rem; }
   }
 
   @keyframes soft-ripple {
@@ -1312,7 +1331,7 @@
             <button type="button" class="zone-btn z2" data-pts="2">+2</button>
             <button type="button" class="zone-btn z3" data-pts="3">+3</button>
             <button type="button" class="zone-btn z4" data-pts="4" aria-label="Add 4, hammer end">+4<small>end</small></button>
-            <button type="button" class="zone-btn z5" data-pts="1" aria-label="Add 1, hanger bonus">Hanger<small>+1</small></button>
+            <button type="button" class="zone-btn z5" data-pts="1" data-hanger="1" aria-label="Add 1, hanger bonus">Hanger<small>+1</small></button>
           </div>
         </div>
 
@@ -1443,6 +1462,7 @@
     names: ['TEAM A', 'TEAM B'],
     scores: [0, 0],
     roundPts: [0, 0],
+    roundHangers: [0, 0], // hanger bonus points scored in the open round
     hammer: 0,
     // 'turns' matches the previous behaviour: hammer alternates every round.
     // 'winner': the side with more points that round keeps the hammer; a tie leaves it.
@@ -1450,7 +1470,7 @@
     scoringFor: 0,
     target: 15,
     roundNum: 1,
-    rounds: [],       // { n, pts:[a,b], totals:[a,b], hammer }
+    rounds: [],       // { n, pts:[a,b], hangers:[a,b], totals:[a,b], hammer }
     undoStack: [],    // actions within current round or meta
     gameOver: false,
     winner: null,
@@ -1458,6 +1478,15 @@
     setupLocked: false,
     history: []       // past completed games
   };
+
+  function normalizePair(value) {
+    function n(v) {
+      var x = typeof v === 'number' ? v : parseInt(v, 10);
+      if (!isFinite(x) || x < 0) return 0;
+      return Math.floor(x);
+    }
+    return [n(value && value[0]), n(value && value[1])];
+  }
 
   function load() {
     try {
@@ -1470,6 +1499,7 @@
         state.names = defaultedNames(data.current.names || state.names);
         state.scores = data.current.scores || [0, 0];
         state.roundPts = data.current.roundPts || [0, 0];
+        state.roundHangers = normalizePair(data.current.roundHangers);
         state.rounds = data.current.rounds || [];
         state.undoStack = data.current.undoStack || [];
         state.hammerMode = data.current.hammerMode === 'winner' ? 'winner' : 'turns';
@@ -1486,6 +1516,7 @@
           names: state.names,
           scores: state.scores,
           roundPts: state.roundPts,
+          roundHangers: state.roundHangers,
           hammer: state.hammer,
           hammerMode: state.hammerMode,
           scoringFor: state.scoringFor,
@@ -1614,27 +1645,30 @@
     state.setupLocked = true;
   }
 
-  function addPoints(pts) {
+  function addPoints(pts, hanger) {
     if (state.gameOver) {
       toast('Game over — start a new game');
       return;
     }
     var who = state.scoringFor;
     state.roundPts[who] += pts;
+    if (hanger && pts > 0) state.roundHangers[who] += pts;
     if (pts > 0) noteScoringStarted();
-    pushUndo({ type: 'pts', who: who, pts: pts });
+    pushUndo({ type: 'pts', who: who, pts: pts, hanger: !!(hanger && pts > 0) });
     render();
     save();
   }
 
   function clearRound(skipUndo) {
-    if (!skipUndo && (state.roundPts[0] || state.roundPts[1])) {
+    if (!skipUndo && (state.roundPts[0] || state.roundPts[1] || state.roundHangers[0] || state.roundHangers[1])) {
       pushUndo({
         type: 'clearRound',
-        prev: state.roundPts.slice()
+        prev: state.roundPts.slice(),
+        prevHangers: state.roundHangers.slice()
       });
     }
     state.roundPts = [0, 0];
+    state.roundHangers = [0, 0];
     render();
     save();
   }
@@ -1655,6 +1689,7 @@
     var prevHammer = state.hammer;
     var prevRoundNum = state.roundNum;
     var prevRoundsLen = state.rounds.length;
+    var h0 = state.roundHangers[0], h1 = state.roundHangers[1];
 
     state.scores[0] += r0;
     state.scores[1] += r1;
@@ -1662,11 +1697,13 @@
     state.rounds.push({
       n: state.roundNum,
       pts: [r0, r1],
+      hangers: [h0, h1],
       totals: state.scores.slice(),
       hammer: state.hammer
     });
 
     state.roundPts = [0, 0];
+    state.roundHangers = [0, 0];
     state.roundNum += 1;
     state.hammer = nextHammer(r0, r1);
     state.scoringFor = state.hammer === 0 ? 1 : 0; // non-hammer often scores first visually; keep selectable
@@ -1677,7 +1714,8 @@
       prevHammer: prevHammer,
       prevRoundNum: prevRoundNum,
       prevRoundsLen: prevRoundsLen,
-      scored: [r0, r1]
+      scored: [r0, r1],
+      hangers: [h0, h1]
     });
 
     var wasOver = state.gameOver;
@@ -1706,8 +1744,12 @@
     }
     if (action.type === 'pts') {
       state.roundPts[action.who] = Math.max(0, state.roundPts[action.who] - action.pts);
+      if (action.hanger) {
+        state.roundHangers[action.who] = Math.max(0, state.roundHangers[action.who] - action.pts);
+      }
     } else if (action.type === 'clearRound') {
       state.roundPts = action.prev.slice();
+      state.roundHangers = normalizePair(action.prevHangers);
     } else if (action.type === 'endRound') {
       cancelCelebrate();
       // If we archived a win, remove that history entry
@@ -1722,6 +1764,7 @@
       state.roundNum = action.prevRoundNum;
       state.rounds.length = action.prevRoundsLen;
       state.roundPts = action.scored.slice();
+      state.roundHangers = normalizePair(action.hangers);
       state.gameOver = false;
       state.winner = null;
       maybeDeclareWinner();
@@ -1769,6 +1812,7 @@
     var keepTarget = state.target;
     state.scores = [0, 0];
     state.roundPts = [0, 0];
+    state.roundHangers = [0, 0];
     state.hammer = 0;
     state.scoringFor = 0;
     state.target = keepTarget;
@@ -1795,6 +1839,7 @@
       cancelCelebrate();
       state.scores = [0, 0];
       state.roundPts = [0, 0];
+      state.roundHangers = [0, 0];
       state.roundNum = 1;
       state.rounds = [];
       state.undoStack = [];
@@ -1933,18 +1978,28 @@
     var html = '';
     for (var i = 0; i < state.rounds.length; i++) {
       var r = state.rounds[i];
+      var hangers = normalizePair(r.hangers);
+      var showHang = hangers[0] > 0 || hangers[1] > 0;
       html += '<article class="round-card">' +
         '<div class="round-card-top">' +
           '<span class="round-card-n">Round ' + r.n + '</span>' +
           '<span class="round-card-tot"><span class="tot-a">' + r.totals[0] + '</span><span class="tot-sep">–</span><span class="tot-b">' + r.totals[1] + '</span></span>' +
         '</div>' +
         '<div class="round-card-scores">' +
-          '<div class="rc-side a"><span class="rc-name">' + esc(shownName(state.names[0], 0)) + '</span><span class="rc-pts">+' + r.pts[0] + '</span></div>' +
-          '<div class="rc-side b"><span class="rc-name">' + esc(shownName(state.names[1], 1)) + '</span><span class="rc-pts">+' + r.pts[1] + '</span></div>' +
+          '<div class="rc-side a"><span class="rc-name">' + esc(shownName(state.names[0], 0)) + '</span><span class="rc-pts">+' + r.pts[0] + '</span>' + hangerMark(hangers[0], showHang) + '</div>' +
+          '<div class="rc-side b"><span class="rc-name">' + esc(shownName(state.names[1], 1)) + '</span><span class="rc-pts">+' + r.pts[1] + '</span>' + hangerMark(hangers[1], showHang) + '</div>' +
         '</div>' +
       '</article>';
     }
     el.innerHTML = html;
+  }
+
+  function hangerMark(points, keep) {
+    var n = parseInt(points, 10);
+    if (!isFinite(n) || n <= 0) {
+      return keep ? '<span class="rc-hang is-empty" aria-hidden="true"></span>' : '';
+    }
+    return '<span class="rc-hang">Hanger +' + n + '</span>';
   }
 
   function renderChart() {
@@ -2550,7 +2605,7 @@
 
   document.querySelectorAll('.zone-btn').forEach(function (b) {
     b.addEventListener('click', function () {
-      addPoints(parseInt(b.getAttribute('data-pts'), 10));
+      addPoints(parseInt(b.getAttribute('data-pts'), 10), b.hasAttribute('data-hanger'));
     });
   });
 

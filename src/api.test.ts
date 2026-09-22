@@ -67,6 +67,15 @@ test("parseLimit keeps a sane page size", () => {
   assert.equal(parseLimit("nope", 40, 100), 40);
 });
 
+test("rounds_json keeps per-round hanger points", () => {
+  const now = new Date("2026-09-22T12:00:00.000Z");
+  const rounds = [{ n: 1, pts: [8, 3], hangers: [2, 0], totals: [8, 3], hammer: 0 }];
+  const parsed = parseGameBody({ ...finished, rounds }, now);
+  assert.equal(parsed.ok, true);
+  if (!parsed.ok) return;
+  assert.equal(parsed.game.roundsJson, JSON.stringify(rounds));
+});
+
 test("parseGameBody accepts a finished match and rejects a tie", () => {
   const now = new Date("2026-09-22T12:00:00.000Z");
   const parsed = parseGameBody(finished, now);

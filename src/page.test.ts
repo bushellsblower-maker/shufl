@@ -43,7 +43,7 @@ test("primary flow is one page with on-board scoring", () => {
   assert.equal(html.includes('data-pts="5"'), false);
   assert.match(
     html,
-    /<button type="button" class="zone-btn z5" data-pts="1" aria-label="Add 1, hanger bonus">Hanger<small>\+1<\/small><\/button>/
+    /<button type="button" class="zone-btn z5" data-pts="1" data-hanger="1" aria-label="Add 1, hanger bonus">Hanger<small>\+1<\/small><\/button>/
   );
   assert.match(html, /\.zones\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
   const dockBlocks = html.match(/\.score-dock\s*\{[^}]*\}/g) || [];
@@ -174,6 +174,51 @@ test("hammer mode defaults to take turns and can keep the winner", () => {
   assert.match(html, /@media \(max-width: 340px\)[\s\S]*\.controls-row\s*\{[^}]*flex-wrap:\s*wrap/);
 });
 
+test("round cards call out hanger bonuses apart from zone points", () => {
+  const html = page("public/index.html");
+  assert.match(html, /<button type="button" class="zone-btn z1" data-pts="1">\+1<\/button>/);
+  assert.equal((html.match(/data-hanger=/g) || []).length, 1);
+  assert.match(html, /roundHangers:\s*\[0,\s*0\]/);
+  assert.match(html, /roundHangers: state\.roundHangers/);
+  assert.match(html, /state\.roundHangers = normalizePair\(data\.current\.roundHangers\)/);
+  assert.match(html, /b\.hasAttribute\('data-hanger'\)/);
+
+  const addStart = html.indexOf("function addPoints(pts, hanger)");
+  const addEnd = html.indexOf("function clearRound");
+  assert.ok(addStart > 0 && addEnd > addStart);
+  const add = html.slice(addStart, addEnd);
+  assert.match(add, /if \(hanger && pts > 0\) state\.roundHangers\[who\] \+= pts;/);
+  assert.match(add, /hanger: !!\(hanger && pts > 0\)/);
+  assert.match(add, /if \(pts > 0\) noteScoringStarted\(\);/);
+
+  const clearStart = html.indexOf("function clearRound");
+  const clearEnd = html.indexOf("function endRound()");
+  const clear = html.slice(clearStart, clearEnd);
+  assert.match(clear, /prevHangers: state\.roundHangers\.slice\(\)/);
+  assert.match(clear, /state\.roundHangers = \[0, 0\]/);
+
+  const endStart = html.indexOf("function endRound()");
+  const endEnd = html.indexOf("function nextHammer");
+  const end = html.slice(endStart, endEnd);
+  assert.match(end, /hangers: \[h0, h1\]/);
+  assert.match(end, /state\.roundHangers = \[0, 0\]/);
+
+  const undoStart = html.indexOf("function undo()");
+  const undoEnd = html.indexOf("function newGame");
+  const undo = html.slice(undoStart, undoEnd);
+  assert.match(undo, /if \(action\.hanger\)/);
+  assert.match(undo, /state\.roundHangers\[action\.who\] = Math\.max\(0, state\.roundHangers\[action\.who\] - action\.pts\)/);
+  assert.match(undo, /state\.roundHangers = normalizePair\(action\.prevHangers\)/);
+  assert.match(undo, /state\.roundHangers = normalizePair\(action\.hangers\)/);
+
+  assert.match(html, /<span class="rc-hang">Hanger \+' \+ n \+ '<\/span>/);
+  assert.match(html, /\.rc-side\.a \.rc-hang\s*\{[^}]*color:\s*#e7a0b0/);
+  assert.match(html, /\.rc-side\.b \.rc-hang\s*\{[^}]*color:\s*#9dbeff/);
+  assert.match(html, /\.round-log\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(html.slice(html.indexOf("function startNewGame()"), html.indexOf("function resetScores()")), /state\.roundHangers = \[0, 0\]/);
+  assert.match(html.slice(html.indexOf("function resetScores()"), html.indexOf("function formatDate")), /state\.roundHangers = \[0, 0\]/);
+});
+
 test("round card running totals use the team board colours", () => {
   const html = page("public/index.html");
   assert.match(
@@ -234,7 +279,7 @@ test("target and hammer lock after the first points and unlock on a fresh match"
   assert.match(html, /function noteScoringStarted\(\)/);
   assert.match(html, /setupLocked: false/);
   assert.match(html, /setupLocked: state\.setupLocked === true/);
-  const addStart = html.indexOf("function addPoints(pts)");
+  const addStart = html.indexOf("function addPoints(pts, hanger)");
   const addEnd = html.indexOf("function clearRound");
   assert.match(html.slice(addStart, addEnd), /if \(pts > 0\) noteScoringStarted\(\);/);
   const endStart = html.indexOf("function endRound()");
