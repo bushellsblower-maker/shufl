@@ -268,6 +268,23 @@
     pointer-events: none;
     z-index: 2;
   }
+  /* Continuous soft ring on the scoring side. The centre stays clear so the score stays readable. */
+  .team.selected::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    width: 78%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.55);
+    background: transparent;
+    box-shadow: 0 0 14px rgba(255, 255, 255, 0.28);
+    transform: translate(-50%, -50%) scale(0.35);
+    animation: selected-ripple 2.6s ease-out infinite;
+    pointer-events: none;
+    z-index: 1;
+  }
   .team .name-input,
   .team .score-big,
   .team .round-pts,
@@ -434,16 +451,25 @@
     font-size: 16px;
     font-weight: 700;
   }
-  .hammer-mode-row {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid rgba(106, 100, 88, 0.45);
+  .controls-row {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px 8px;
   }
-  .hammer-mode-row .lbl { flex: 0 0 auto; }
-  #hammerModeSeg { flex: 0 1 auto; min-width: 0; margin-left: auto; }
-  #hammerModeSeg button {
+  .control-cluster {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+  .controls-row .lbl { flex: 0 0 auto; }
+  .controls-row .seg { flex: 0 1 auto; }
+  .controls-row .seg button {
     flex: 0 1 auto;
     min-width: 0;
+    padding: 8px 10px;
     white-space: nowrap;
   }
 
@@ -592,15 +618,15 @@
     margin-bottom: 8px;
   }
   .round-log {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
   }
   .round-card {
     background: var(--bg2);
     border: 2px solid var(--border);
     border-radius: 2px;
-    padding: 8px 10px;
+    padding: 4px 3px 5px;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     min-width: 0;
   }
@@ -608,29 +634,36 @@
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    gap: 8px;
-    margin-bottom: 6px;
+    gap: 2px;
+    margin-bottom: 3px;
+    min-width: 0;
   }
   .round-card-n {
-    font-size: 0.78rem;
+    font-size: 0.62rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.02em;
     text-transform: uppercase;
     color: var(--accent);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .round-card-tot {
     color: var(--muted);
-    font-size: 0.8rem;
+    font-size: 0.62rem;
     font-variant-numeric: tabular-nums;
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
   .round-card-scores {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 6px;
+    gap: 3px;
   }
   .rc-side {
     min-width: 0;
-    padding: 6px 8px;
+    padding: 3px 2px;
     border: 1px solid var(--border);
   }
   .rc-side.a {
@@ -643,9 +676,9 @@
   }
   .rc-name {
     display: block;
-    font-size: 0.68rem;
+    font-size: 0.56rem;
     font-weight: 600;
-    letter-spacing: 0.04em;
+    letter-spacing: 0;
     color: rgba(255, 255, 255, 0.78);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -653,7 +686,7 @@
   }
   .rc-pts {
     display: block;
-    font-size: 1.15rem;
+    font-size: 0.9rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     line-height: 1.1;
@@ -724,11 +757,30 @@
     gap: 8px;
   }
   .hist-card {
+    position: relative;
     background: var(--bg2);
     border-radius: 10px;
-    padding: 12px;
+    padding: 12px 44px 12px 12px;
     border: 1px solid var(--border);
   }
+  .hist-x {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    min-height: 32px;
+    padding: 0;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 1.15rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .hist-x:active { filter: brightness(1.2); }
   .hist-card .head {
     display: flex;
     justify-content: space-between;
@@ -763,7 +815,12 @@
     gap: 8px;
   }
   .card .toolbar { margin-top: 8px; }
-  .toolbar .btn { flex: 1; min-width: 120px; }
+  .toolbar .btn {
+    flex: 1;
+    min-width: 0;
+    white-space: normal;
+    line-height: 1.15;
+  }
 
   .score-dock {
     display: flex;
@@ -845,13 +902,19 @@
       padding: 6px 10px;
       min-height: 36px;
     }
-    .hammer-mode-row { margin-top: 6px; padding-top: 6px; }
-    #hammerModeSeg button {
+    .controls-row { gap: 4px; }
+    .control-cluster { gap: 4px; }
+    .controls-row .lbl { font-size: 0.68rem; letter-spacing: 0; }
+    .controls-row .seg { padding: 2px; gap: 2px; }
+    .controls-row .seg button {
       padding: 6px 8px;
-      font-size: 0.72rem;
-      letter-spacing: 0.02em;
+      min-height: 36px;
+      min-width: 0;
+      font-size: 0.7rem;
+      letter-spacing: 0;
     }
     .custom-target { height: 36px; width: 56px; }
+    .controls-row .custom-target { height: 36px; width: 42px; font-size: 14px; padding: 0; }
 
     .zones { grid-template-columns: repeat(4, 1fr); gap: 6px; }
     .zones-title { margin-bottom: 6px; font-size: 0.72rem; }
@@ -871,12 +934,13 @@
 
     .section-title { margin-bottom: 4px; font-size: 0.72rem; }
     .bars { height: 56px; }
-    .round-log { gap: 6px; }
-    .round-card { padding: 6px 8px; }
-    .rc-side { padding: 4px 6px; }
-    .rc-pts { font-size: 1.05rem; }
+    .round-log { gap: 4px; }
+    .round-card { padding: 4px 3px 4px; }
+    .rc-side { padding: 2px; }
+    .rc-pts { font-size: 0.88rem; }
     .history-list { gap: 4px; }
-    .hist-card { padding: 6px 8px; border-radius: 4px; }
+    .hist-card { padding: 6px 36px 6px 8px; border-radius: 4px; }
+    .hist-x { top: 4px; right: 4px; width: 28px; height: 28px; min-height: 28px; }
     .hist-card .head { margin-bottom: 2px; }
     .hist-card .names { font-size: 0.88rem; margin-bottom: 0; }
     .banner { padding: 8px; font-size: 0.95rem; }
@@ -890,14 +954,33 @@
     .target-chip { padding: 2px; }
     .score-big { font-size: 1.85rem; }
     .round-pts { font-size: 0.68rem; }
-    .round-card-n { font-size: 0.7rem; }
+    .round-card-n, .round-card-tot { font-size: 0.58rem; }
+    .rc-name { font-size: 0.52rem; }
+    .rc-pts { font-size: 0.82rem; }
     .modal h2 { font-size: 1.05rem; }
     .rules-body li { font-size: 0.92rem; }
+  }
+
+  @media (max-width: 340px) {
+    .controls-row { flex-wrap: wrap; }
+    .control-cluster { flex: 1 1 100%; }
+  }
+
+  @media (min-width: 701px) {
+    .round-card { padding: 8px 8px; }
+    .round-card-n, .round-card-tot { font-size: 0.75rem; }
+    .rc-side { padding: 6px 8px; }
+    .rc-name { font-size: 0.68rem; }
+    .rc-pts { font-size: 1.15rem; }
   }
 
   @keyframes soft-ripple {
     0% { transform: scale(0.15); opacity: 0.7; }
     100% { transform: scale(2.5); opacity: 0; }
+  }
+  @keyframes selected-ripple {
+    0% { transform: translate(-50%, -50%) scale(0.35); opacity: 0.7; }
+    100% { transform: translate(-50%, -50%) scale(1.35); opacity: 0; }
   }
   @keyframes team-win {
     0%, 100% { transform: translateY(0); }
@@ -980,7 +1063,8 @@
     flex-direction: column;
   }
   .modal.rules-modal h2 { flex: 0 0 auto; }
-  .rules-body {
+  .rules-body,
+  .history-body {
     position: relative;
     flex: 1 1 auto;
     min-height: 0;
@@ -989,6 +1073,30 @@
     overscroll-behavior: contain;
     margin: 0 0 12px;
     padding-right: 2px;
+  }
+  .lb-list {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .lb-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 0.92rem;
+    padding: 6px 8px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+  }
+  .lb-list .wins {
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    font-size: 0.82rem;
   }
   .rules-body ol {
     list-style: decimal;
@@ -1016,9 +1124,11 @@
 
   @media (prefers-reduced-motion: reduce) {
     .ripple,
+    .team.selected::after,
     .celebrate-layer i,
     .banner.celebrate .winner-line,
     .team.win-pulse { animation: none !important; }
+    .team.selected::after { display: none; }
     .celebrate-layer { display: none; }
   }
 </style>
@@ -1082,26 +1192,27 @@
       </div>
 
       <div class="toolbar">
+        <button type="button" class="btn" id="btnHistory" aria-haspopup="dialog" aria-controls="historyModal">History</button>
         <button type="button" class="btn" id="btnNewGame">New Game</button>
         <button type="button" class="btn danger" id="btnResetGame">Reset Scores</button>
       </div>
 
       <div class="card">
-        <div class="row spread">
-          <label class="lbl">Target</label>
-          <div class="row">
-            <div class="seg" id="targetSeg">
+        <div class="row spread controls-row">
+          <div class="control-cluster">
+            <label class="lbl" id="targetLabel">Target</label>
+            <div class="seg" id="targetSeg" role="group" aria-labelledby="targetLabel">
               <button type="button" data-target="15" class="on">15</button>
               <button type="button" data-target="21">21</button>
             </div>
-            <input class="custom-target" id="customTarget" type="number" min="1" max="99" placeholder="…" title="Custom target" inputmode="numeric">
+            <input class="custom-target" id="customTarget" type="number" min="1" max="99" placeholder="…" title="Custom target" inputmode="numeric" aria-label="Custom target">
           </div>
-        </div>
-        <div class="row spread hammer-mode-row">
-          <label class="lbl" id="hammerModeLabel">Hammer</label>
-          <div class="seg" id="hammerModeSeg" role="group" aria-labelledby="hammerModeLabel">
-            <button type="button" data-hammer-mode="winner" aria-pressed="false" title="The side that scores the round keeps the hammer">Winner</button>
-            <button type="button" data-hammer-mode="turns" class="on" aria-pressed="true" title="Hammer alternates each round">Take Turns</button>
+          <div class="control-cluster">
+            <label class="lbl" id="hammerModeLabel">Hammer</label>
+            <div class="seg" id="hammerModeSeg" role="group" aria-labelledby="hammerModeLabel">
+              <button type="button" data-hammer-mode="winner" aria-pressed="false" title="The side that scores the round keeps the hammer">Winner</button>
+              <button type="button" data-hammer-mode="turns" class="on" aria-pressed="true" title="Hammer alternates each round">Take Turns</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1119,18 +1230,6 @@
       </div>
     </section>
 
-    <!-- HISTORY -->
-    <section class="panel" id="panel-history">
-      <div class="card">
-        <div class="section-title">History</div>
-        <div class="history-list" id="historyList">
-          <div class="empty">No past matches yet.</div>
-        </div>
-        <div class="toolbar">
-          <button type="button" class="btn danger" id="btnClearHistory">Clear All History</button>
-        </div>
-      </div>
-    </section>
   </main>
 
   <div class="celebrate-layer" id="celebrateLayer" aria-hidden="true"></div>
@@ -1173,6 +1272,18 @@
       </div>
       <div class="rules-actions">
         <button type="button" class="btn primary" id="rulesDone">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="historyModal" hidden>
+    <div class="modal card rules-modal" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
+      <h2 id="historyTitle">History</h2>
+      <div class="history-body" id="historyBody">
+        <div class="empty">Loading history…</div>
+      </div>
+      <div class="rules-actions">
+        <button type="button" class="btn primary" id="historyDone">Done</button>
       </div>
     </div>
   </div>
@@ -1293,16 +1404,54 @@
     var last = state.history[0];
     if (last && last.startedAt === state.startedAt) return;
 
-    state.history.unshift({
+    var entry = {
       startedAt: state.startedAt,
       endedAt: Date.now(),
       names: state.names.slice(),
       scores: state.scores.slice(),
       target: state.target,
       winner: state.winner,
-      rounds: state.rounds.slice()
-    });
+      rounds: state.rounds.slice(),
+      hammerMode: state.hammerMode
+    };
+    state.history.unshift(entry);
     if (state.history.length > 50) state.history.pop();
+    publishGame(entry);
+  }
+
+  function publishGame(entry) {
+    if (!entry || (entry.winner !== 0 && entry.winner !== 1)) return;
+    var payload = {
+      id: String(entry.startedAt),
+      playedAt: new Date(entry.endedAt || Date.now()).toISOString(),
+      names: [shownName(entry.names[0], 0), shownName(entry.names[1], 1)],
+      scores: [entry.scores[0], entry.scores[1]],
+      target: entry.target,
+      winner: entry.winner,
+      rounds: entry.rounds || [],
+      hammerMode: entry.hammerMode === 'winner' ? 'winner' : 'turns'
+    };
+    var id = payload.id;
+    try {
+      fetch('/api/games', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(function (res) {
+        if (!res.ok) return;
+        var still = null;
+        for (var i = 0; i < state.history.length; i++) {
+          if (String(state.history[i].startedAt) === id) still = state.history[i];
+        }
+        if (!still) {
+          deleteRemote(id);
+          return;
+        }
+        still.remoteId = id;
+        save();
+        if (historyOpen()) renderHistoryModal();
+      }).catch(function () { /* keep the local archive when offline */ });
+    } catch (e) { /* offline */ }
   }
 
   function addPoints(pts) {
@@ -1401,7 +1550,10 @@
       cancelCelebrate();
       // If we archived a win, remove that history entry
       if (state.history[0] && state.history[0].startedAt === state.startedAt) {
-        state.history.shift();
+        var dropped = state.history.shift();
+        if (dropped && !dropped.incomplete && (dropped.winner === 0 || dropped.winner === 1)) {
+          deleteRemote(String(dropped.remoteId || dropped.startedAt));
+        }
       }
       state.scores = action.prevScores.slice();
       state.hammer = action.prevHammer;
@@ -1489,20 +1641,6 @@
       render();
       save();
       toast('Scores reset');
-    });
-  }
-
-  function clearHistory() {
-    askConfirm({
-      title: 'Are you sure?',
-      message: 'Clear ALL match history? This cannot be undone.',
-      danger: true
-    }).then(function (ok) {
-      if (!ok) return;
-      state.history = [];
-      save();
-      renderHistory();
-      toast('History cleared');
     });
   }
 
@@ -1607,7 +1745,6 @@
 
     renderRoundLog();
     renderChart();
-    renderHistory();
   }
 
   function renderRoundLog() {
@@ -1660,36 +1797,13 @@
     el.innerHTML = html;
   }
 
-  function renderHistory() {
-    var el = $('historyList');
-    if (!state.history.length) {
-      el.innerHTML = '<div class="empty">No past matches yet.</div>';
-      return;
-    }
-    var html = '';
-    state.history.forEach(function (g) {
-      var result;
-      if (g.winner === null || g.winner === undefined) {
-        result = g.scores[0] + ' – ' + g.scores[1] +
-          (g.incomplete ? ' <span style="color:var(--warn)">(incomplete)</span>' : ' <span style="color:var(--muted)">(tie)</span>');
-      } else {
-        result = '<span class="w">' + shownName(g.names[g.winner], g.winner) + ' won</span> · ' +
-          g.scores[0] + ' – ' + g.scores[1] + ' (to ' + g.target + ')';
-      }
-      html += '<div class="hist-card">' +
-        '<div class="head"><span>' + formatDate(g.endedAt || g.startedAt) + '</span>' +
-        '<span>' + (g.rounds ? g.rounds.length : 0) + ' rounds</span></div>' +
-        '<div class="names">' + shownName(g.names[0], 0) + ' vs ' + shownName(g.names[1], 1) + '</div>' +
-        '<div class="result">' + result + '</div>' +
-        '</div>';
-    });
-    el.innerHTML = html;
-  }
-
-
   var confirmResolver = null;
   var winEpoch = 0;
   var winPromptTimer = 0;
+  var historyToken = 0;
+  var remoteGames = [];
+  var remoteLeaders = [];
+  var remoteStatus = 'idle';
 
   function askConfirm(opts) {
     return new Promise(function (resolve) {
@@ -1717,7 +1831,7 @@
     confirmResolver = null;
     var modal = $('confirmModal');
     if (modal) modal.hidden = true;
-    if (!rulesOpen()) document.body.classList.remove('modal-open');
+    if (!rulesOpen() && !historyOpen()) document.body.classList.remove('modal-open');
     if (resolve) resolve(!!result);
   }
 
@@ -1727,7 +1841,7 @@
   }
 
   function openRules() {
-    if (confirmResolver || !$('confirmModal').hidden) return;
+    if (confirmResolver || !$('confirmModal').hidden || historyOpen()) return;
     var modal = $('rulesModal');
     var body = $('rulesBody');
     if (body) body.scrollTop = 0;
@@ -1740,9 +1854,239 @@
     var modal = $('rulesModal');
     if (!modal || modal.hidden) return;
     modal.hidden = true;
-    if ($('confirmModal').hidden) document.body.classList.remove('modal-open');
+    if ($('confirmModal').hidden && !historyOpen()) document.body.classList.remove('modal-open');
     var btn = $('btnRules');
     if (btn) btn.focus();
+  }
+
+  function historyOpen() {
+    var modal = $('historyModal');
+    return !!(modal && !modal.hidden);
+  }
+
+  function openHistory() {
+    if (confirmResolver || !$('confirmModal').hidden || rulesOpen()) return;
+    var modal = $('historyModal');
+    var body = $('historyBody');
+    if (body) body.scrollTop = 0;
+    modal.hidden = false;
+    document.body.classList.add('modal-open');
+    $('historyDone').focus();
+    loadHistory();
+  }
+
+  function closeHistory() {
+    var modal = $('historyModal');
+    if (!modal || modal.hidden) return;
+    historyToken += 1;
+    modal.hidden = true;
+    if ($('confirmModal').hidden && !rulesOpen()) document.body.classList.remove('modal-open');
+    var btn = $('btnHistory');
+    if (btn) btn.focus();
+  }
+
+  function localHistoryKey(game) {
+    if (!game) return '';
+    if (game.remoteId) return String(game.remoteId);
+    if (game.startedAt != null) return String(game.startedAt);
+    return '';
+  }
+
+  function finishedLocal(game) {
+    return !!(game && !game.incomplete && (game.winner === 0 || game.winner === 1));
+  }
+
+  function mergedHistory() {
+    var byKey = {};
+    var rows = [];
+    function put(row) {
+      var prev = byKey[row.key];
+      if (prev) {
+        prev.local = prev.local || row.local;
+        prev.remote = prev.remote || row.remote;
+        return;
+      }
+      byKey[row.key] = row;
+      rows.push(row);
+    }
+    remoteGames.forEach(function (game) {
+      put({
+        key: String(game.id),
+        when: game.playedAt,
+        names: game.names || [],
+        scores: game.scores || [0, 0],
+        target: game.target,
+        winnerName: game.winnerName || '',
+        incomplete: false,
+        roundCount: game.roundCount || 0,
+        local: false,
+        remote: true
+      });
+    });
+    state.history.forEach(function (game) {
+      var key = localHistoryKey(game);
+      if (key && byKey[key]) {
+        byKey[key].local = true;
+        byKey[key].remote = true;
+        return;
+      }
+      var winnerName = (game.winner === 0 || game.winner === 1)
+        ? shownName(game.names[game.winner], game.winner)
+        : '';
+      put({
+        key: key || ('local-' + String(game.startedAt)),
+        when: game.endedAt || game.startedAt,
+        names: game.names || [],
+        scores: game.scores || [0, 0],
+        target: game.target,
+        winnerName: winnerName,
+        incomplete: !!game.incomplete,
+        roundCount: game.rounds ? game.rounds.length : 0,
+        local: true,
+        remote: finishedLocal(game)
+      });
+    });
+    rows.sort(function (a, b) {
+      return new Date(b.when || 0).getTime() - new Date(a.when || 0).getTime();
+    });
+    return rows;
+  }
+
+  function historyResult(row) {
+    var scores = row.scores || [0, 0];
+    if (row.incomplete) {
+      return esc(scores[0]) + ' – ' + esc(scores[1]) + ' <span style="color:var(--warn)">(incomplete)</span>';
+    }
+    if (!row.winnerName) {
+      return esc(scores[0]) + ' – ' + esc(scores[1]) + ' <span style="color:var(--muted)">(tie)</span>';
+    }
+    return '<span class="w">' + esc(row.winnerName) + ' won</span> · ' +
+      esc(scores[0]) + ' – ' + esc(scores[1]) + ' (to ' + esc(row.target) + ')';
+  }
+
+  function renderHistoryModal() {
+    if (!historyOpen()) return;
+    var rows = mergedHistory();
+    var html = '';
+    if (remoteLeaders.length) {
+      html += '<div class="section-title">Leaderboard</div><ol class="lb-list">';
+      remoteLeaders.forEach(function (row) {
+        var wins = Number(row.wins) || 0;
+        var played = Number(row.games) || 0;
+        html += '<li><span>' + esc(row.name || 'Player') + '</span><span class="wins">' +
+          wins + (wins === 1 ? ' win' : ' wins') + ' · ' +
+          played + (played === 1 ? ' game' : ' games') + '</span></li>';
+      });
+      html += '</ol>';
+    }
+    if (remoteStatus === 'loading') {
+      html += '<div class="empty">Loading history…</div>';
+    } else if (remoteStatus === 'error') {
+      html += '<div class="empty">Could not load saved games. Games on this device are still listed.</div>' +
+        '<div class="rules-actions"><button type="button" class="btn" id="historyRetry">Try again</button></div>';
+    }
+    if (!rows.length && remoteStatus !== 'loading') {
+      html += '<div class="empty">No games yet.</div>';
+    } else if (rows.length) {
+      html += '<div class="history-list">';
+      rows.forEach(function (row) {
+        var names = row.names || [];
+        html += '<div class="hist-card">' +
+          '<button type="button" class="hist-x" data-hist-key="' + esc(row.key) + '" aria-label="Delete this game">×</button>' +
+          '<div class="head"><span>' + esc(formatDate(row.when)) + '</span><span>' +
+            (row.roundCount === 1 ? '1 round' : row.roundCount + ' rounds') + '</span></div>' +
+          '<div class="names">' + esc(shownName(names[0], 0)) + ' vs ' + esc(shownName(names[1], 1)) + '</div>' +
+          '<div class="result">' + historyResult(row) + '</div></div>';
+      });
+      html += '</div>';
+    }
+    $('historyBody').innerHTML = html;
+  }
+
+  function fetchJson(url) {
+    return fetch(url).then(function (res) {
+      if (!res.ok) throw new Error(String(res.status));
+      return res.json();
+    });
+  }
+
+  function loadHistory() {
+    var token = ++historyToken;
+    remoteStatus = 'loading';
+    renderHistoryModal();
+    var gamesReq = fetchJson('/api/games?limit=40');
+    var boardReq = fetchJson('/api/leaderboard?limit=8').catch(function () { return null; });
+    Promise.all([gamesReq, boardReq]).then(function (pair) {
+      if (token !== historyToken) return;
+      var gamesPayload = pair[0] || {};
+      var boardPayload = pair[1];
+      remoteGames = Array.isArray(gamesPayload.games) ? gamesPayload.games : [];
+      remoteLeaders = boardPayload && Array.isArray(boardPayload.leaders) ? boardPayload.leaders : [];
+      remoteStatus = 'ready';
+      renderHistoryModal();
+    }).catch(function () {
+      if (token !== historyToken) return;
+      remoteGames = [];
+      remoteLeaders = [];
+      remoteStatus = 'error';
+      renderHistoryModal();
+    });
+  }
+
+  function deleteRemote(id) {
+    return fetch('/api/games/' + encodeURIComponent(id), { method: 'DELETE' }).then(function (res) {
+      return res.ok || res.status === 404;
+    }).catch(function () { return false; });
+  }
+
+  function dropLocalHistory(key) {
+    var kept = [];
+    var removed = [];
+    state.history.forEach(function (game) {
+      var localKey = localHistoryKey(game);
+      var fallback = 'local-' + String(game.startedAt);
+      if (localKey === key || fallback === key) removed.push(game);
+      else kept.push(game);
+    });
+    state.history = kept;
+    save();
+    return removed;
+  }
+
+  function askDeleteHistory(key) {
+    if (!key) return;
+    var row = null;
+    mergedHistory().forEach(function (item) {
+      if (item.key === key) row = item;
+    });
+    if (!row) return;
+    askConfirm({
+      title: 'Are you sure?',
+      message: 'Delete this game from history?',
+      danger: true
+    }).then(function (ok) {
+      if (!ok || !historyOpen()) return;
+      var removed = dropLocalHistory(key);
+      if (!row.remote) {
+        renderHistoryModal();
+        return;
+      }
+      deleteRemote(key).then(function (gone) {
+        if (!gone) {
+          removed.forEach(function (game) { state.history.unshift(game); });
+          save();
+          toast('Could not delete that saved game');
+        } else {
+          remoteGames = remoteGames.filter(function (game) { return String(game.id) !== key; });
+          fetchJson('/api/leaderboard?limit=8').then(function (board) {
+            remoteLeaders = board && Array.isArray(board.leaders) ? board.leaders : remoteLeaders;
+            if (historyOpen()) renderHistoryModal();
+          }).catch(function () { /* keep the list already on screen */ });
+        }
+        if (historyOpen()) renderHistoryModal();
+      });
+      renderHistoryModal();
+    });
   }
 
   function commitTarget(next) {
@@ -1764,7 +2108,7 @@
   function scheduleWinPrompt(epoch, delay) {
     winPromptTimer = setTimeout(function () {
       if (epoch !== winEpoch || !state.gameOver || state.winner === null) return;
-      if (confirmResolver || rulesOpen()) {
+      if (confirmResolver || rulesOpen() || historyOpen()) {
         scheduleWinPrompt(epoch, 280);
         return;
       }
@@ -1963,7 +2307,15 @@
   });
   $('btnNewGame').addEventListener('click', function () { newGame(true); });
   $('btnResetGame').addEventListener('click', resetScores);
-  $('btnClearHistory').addEventListener('click', clearHistory);
+  $('btnHistory').addEventListener('click', openHistory);
+  $('historyDone').addEventListener('click', closeHistory);
+  $('historyModal').addEventListener('click', function (e) {
+    if (e.target === $('historyModal')) closeHistory();
+    var retry = e.target.closest && e.target.closest('#historyRetry');
+    if (retry) loadHistory();
+    var remove = e.target.closest && e.target.closest('.hist-x');
+    if (remove) askDeleteHistory(remove.getAttribute('data-hist-key'));
+  });
   $('confirmCancel').addEventListener('click', function () { closeConfirm(false); });
   $('confirmOk').addEventListener('click', function () { closeConfirm(true); });
   $('confirmModal').addEventListener('click', function (e) {
@@ -1979,6 +2331,11 @@
     if (!$('confirmModal').hidden) {
       e.preventDefault();
       closeConfirm(false);
+      return;
+    }
+    if (historyOpen()) {
+      e.preventDefault();
+      closeHistory();
       return;
     }
     if (rulesOpen()) {

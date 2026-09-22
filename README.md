@@ -2,23 +2,24 @@
 
 Industrial shuffleboard scorekeeper. Cloudflare Worker **`shufl`** at **https://shufl.cybush.uk**.
 
-Scores, player names, and match history stay in the browser (`localStorage`). The Worker does not store game data.
+Recent scores, player names, and match history stay in the browser (`localStorage`). Finished games are also posted to D1 so old history and the leaderboard survive a cleared device.
 
 Publishing is **GitHub → Cloudflare** only (GitHub Actions, or Workers Builds). No laptop deploy.
 
 ## Stack
 
-- Worker `shufl` records a fleet audit hit, then serves static assets
+- Worker `shufl` records a fleet audit hit, serves `/api/games` and `/api/leaderboard` from D1, then serves static assets
 - `public/index.html` is the single-file dashboard (table photo embedded)
 - `SHUFL.html` at the repo root is the same file, for offline download
 - Analytics Engine dataset `cybush`, binding `AUDIT_HITS` (host, path, status)
-- `npm run deploy` → `wrangler deploy` (Worker + custom domain `shufl.cybush.uk`)
+- D1 database `shufl`, binding `DB` (finished games + `leaderboard` view)
+- `npm run deploy` → `scripts/cf-publish.mjs` (create D1 if needed, apply migrations, deploy Worker + custom domain `shufl.cybush.uk`)
 
 `SITE_URL` and the hostname live in `wrangler.jsonc`.
 
 ## Publish (GitHub Actions)
 
-Push or merge to `main`, or run **Actions → Publish to Cloudflare**. The workflow runs `npm ci` and `npm run deploy`.
+Push or merge to `main`, or run **Actions → Publish to Cloudflare**. The workflow runs `npm ci` and `npm run deploy`. That script creates D1 database `shufl` when it is missing, writes the id into the publish checkout, applies `migrations/`, and deploys the Worker.
 
 Repository secrets (Settings → Secrets and variables → Actions) on **this** repo:
 
@@ -44,14 +45,20 @@ Workers Builds uses the connected Cloudflare account. You do not add `CLOUDFLARE
 
 ## Data
 
-The scorekeeper reads and writes `localStorage` on the device. There is no database and no admin login. Clearing site data for `shufl.cybush.uk` clears the games.
+The scoring page does not list past games. **History**, next to New Game, opens them in a modal: recent matches from this device and saved matches from `GET /api/games`, plus a short win list from `GET /api/leaderboard`.
+
+Each row has an **X**. Confirming in the in-app dialog removes a device-only game from `localStorage`. A game that was saved (or loaded from D1) is also removed with `DELETE /api/games/:id`.
+
+A finished game is `POST`ed to `/api/games`. If the device is offline, the local copy is kept and the post is skipped. There is no admin login and no button that clears every game at once.
 
 ## Layout
 
 ```
 public/index.html          served at /
 SHUFL.html                 offline copy
-src/index.ts               audit hit, then ASSETS.fetch
-wrangler.jsonc             name, domain, Analytics Engine
+src/index.ts               audit hit, history API, then ASSETS.fetch
+migrations/0001_games.sql  games table + leaderboard view
+scripts/cf-publish.mjs     create D1, migrate, deploy
+wrangler.jsonc             name, domain, Analytics Engine, D1 binding
 .github/workflows/         typecheck + cloud publish
 ```

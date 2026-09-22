@@ -34,7 +34,7 @@ test("primary flow is one page with on-board scoring", () => {
   assert.equal(html.includes('data-team="1"'), true);
   assert.equal(html.includes('class="score-dock for-p1"'), true);
   assert.equal(html.includes("shuffleboard-scoreboard-v1"), true);
-  for (const id of ["btnUndo", "btnEndRound", "btnClearRound", "btnNewGame", "btnResetGame", "btnClearHistory", "roundLog", "historyList"]) {
+  for (const id of ["btnUndo", "btnEndRound", "btnClearRound", "btnHistory", "btnNewGame", "btnResetGame", "roundLog"]) {
     assert.equal(html.includes(`id="${id}"`), true, id);
   }
   for (const pts of ["1", "2", "3", "4"]) {
@@ -60,7 +60,7 @@ test("in-app confirm, team colours, and round cards", () => {
   assert.equal(html.includes('id="confirmOk">Confirm</button>'), true);
   assert.equal(html.includes('class="btn neutral" id="btnClearRound"'), true);
   assert.equal(html.includes('class="btn danger" id="btnResetGame"'), true);
-  assert.equal(html.includes('class="btn danger" id="btnClearHistory"'), true);
+  assert.equal(html.includes("btnClearHistory"), false);
   assert.ok(html.indexOf('id="btnNewGame"') < html.indexOf('id="btnResetGame"'));
   assert.ok(html.indexOf('id="btnResetGame"') < html.indexOf('id="targetSeg"'));
   assert.equal(html.includes("round-item"), false);
@@ -138,4 +138,50 @@ test("hammer mode defaults to take turns and can keep the winner", () => {
   assert.match(html, /state\.hammer = nextHammer\(r0, r1\);/);
   assert.ok(html.indexOf('id="hammerModeSeg"') > html.indexOf('id="targetSeg"'));
   assert.ok(html.indexOf('id="hammerModeSeg"') < html.indexOf('id="panel-stats"'));
+  const controls = html.slice(html.indexOf('class="row spread controls-row"'), html.indexOf('id="panel-stats"'));
+  assert.ok(controls.includes('id="targetSeg"'));
+  assert.ok(controls.includes('id="hammerModeSeg"'));
+  assert.equal(controls.includes("hammer-mode-row"), false);
+  assert.match(html, /\.controls-row\s*\{[^}]*flex-wrap:\s*nowrap/);
+  assert.match(html, /@media \(max-width: 340px\)[\s\S]*\.controls-row\s*\{[^}]*flex-wrap:\s*wrap/);
+});
+
+test("round cards sit three across and the selected side keeps rippling", () => {
+  const html = page("public/index.html");
+  assert.match(html, /\.round-log\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(html, /\.team\.selected::after\s*\{[^}]*animation:\s*selected-ripple[^}]*infinite/);
+  assert.match(html, /@keyframes selected-ripple/);
+  assert.match(html, /prefers-reduced-motion[\s\S]*\.team\.selected::after/);
+});
+
+test("history is a modal with per-game delete", () => {
+  const html = page("public/index.html");
+  assert.equal(html.includes("Clear All History"), false);
+  assert.equal(html.includes("Clear Recent History"), false);
+  assert.equal(html.includes("View Old History"), false);
+  assert.equal(html.includes('id="btnClearHistory"'), false);
+  assert.equal(html.includes('id="historyList"'), false);
+  assert.equal(html.includes('id="panel-history"'), false);
+  assert.equal(html.includes('id="btnHistory"'), true);
+  assert.match(html, />History<\/button>/);
+  assert.equal(html.includes('id="historyModal"'), true);
+  assert.equal(html.includes('id="historyTitle">History</h2>'), true);
+  assert.equal(html.includes("Loading history…"), true);
+  assert.equal(html.includes("No games yet."), true);
+  assert.match(html, /class="hist-x"/);
+  assert.match(html, /aria-label="Delete this game"/);
+  assert.match(html, /Delete this game from history\?/);
+  assert.match(html, /title: 'Are you sure\?'/);
+  assert.equal(/\bconfirm\s*\(/.test(html), false);
+  assert.match(html, /method: 'DELETE'/);
+  assert.match(html, /\/api\/games\/' \+ encodeURIComponent\(id\)/);
+  assert.match(html, /fetchJson\('\/api\/games\?limit=40'\)/);
+  assert.match(html, /fetchJson\('\/api\/leaderboard\?limit=8'\)/);
+  assert.match(html, /if \(!row\.remote\)/);
+  assert.ok(html.indexOf('id="btnHistory"') > html.indexOf('id="panel-play"'));
+  assert.ok(html.indexOf('id="btnHistory"') < html.indexOf('id="panel-stats"'));
+  const archiveStart = html.indexOf("function archiveIfWon()");
+  const archiveEnd = html.indexOf("function publishGame");
+  assert.ok(archiveStart > 0 && archiveEnd > archiveStart);
+  assert.match(html.slice(archiveStart, archiveEnd), /publishGame\(entry\)/);
 });

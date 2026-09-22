@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "deploy": "wrangler deploy",
+    "deploy": "node scripts/cf-publish.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/**/*.test.ts"
+    "test": "node --experimental-strip-types --test src/**/*.test.ts scripts/**/*.test.mjs"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "latest",
