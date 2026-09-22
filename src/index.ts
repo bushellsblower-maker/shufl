@@ -1,3 +1,5 @@
+import { handleApi } from "./api.ts";
+
 export function auditDataPoint(url: URL, status: number): AnalyticsEngineDataPoint {
   return {
     indexes: ["shufl"],
@@ -17,6 +19,11 @@ function recordAuditHit(env: Env, url: URL, status: number): void {
 export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
+    if (url.pathname === "/api/games" || url.pathname === "/api/leaderboard") {
+      const response = await handleApi(request, env, url);
+      recordAuditHit(env, url, response.status);
+      return response;
+    }
     const response = await env.ASSETS.fetch(request);
     recordAuditHit(env, url, response.status);
     return response;

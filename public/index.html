@@ -268,6 +268,23 @@
     pointer-events: none;
     z-index: 2;
   }
+  /* Continuous soft ring on the scoring side. The centre stays clear so the score stays readable. */
+  .team.selected::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    width: 78%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.55);
+    background: transparent;
+    box-shadow: 0 0 14px rgba(255, 255, 255, 0.28);
+    transform: translate(-50%, -50%) scale(0.35);
+    animation: selected-ripple 2.6s ease-out infinite;
+    pointer-events: none;
+    z-index: 1;
+  }
   .team .name-input,
   .team .score-big,
   .team .round-pts,
@@ -434,16 +451,25 @@
     font-size: 16px;
     font-weight: 700;
   }
-  .hammer-mode-row {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid rgba(106, 100, 88, 0.45);
+  .controls-row {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px 8px;
   }
-  .hammer-mode-row .lbl { flex: 0 0 auto; }
-  #hammerModeSeg { flex: 0 1 auto; min-width: 0; margin-left: auto; }
-  #hammerModeSeg button {
+  .control-cluster {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+  .controls-row .lbl { flex: 0 0 auto; }
+  .controls-row .seg { flex: 0 1 auto; }
+  .controls-row .seg button {
     flex: 0 1 auto;
     min-width: 0;
+    padding: 8px 10px;
     white-space: nowrap;
   }
 
@@ -592,15 +618,15 @@
     margin-bottom: 8px;
   }
   .round-log {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
   }
   .round-card {
     background: var(--bg2);
     border: 2px solid var(--border);
     border-radius: 2px;
-    padding: 8px 10px;
+    padding: 4px 3px 5px;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     min-width: 0;
   }
@@ -608,29 +634,36 @@
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    gap: 8px;
-    margin-bottom: 6px;
+    gap: 2px;
+    margin-bottom: 3px;
+    min-width: 0;
   }
   .round-card-n {
-    font-size: 0.78rem;
+    font-size: 0.62rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.02em;
     text-transform: uppercase;
     color: var(--accent);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .round-card-tot {
     color: var(--muted);
-    font-size: 0.8rem;
+    font-size: 0.62rem;
     font-variant-numeric: tabular-nums;
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
   .round-card-scores {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 6px;
+    gap: 3px;
   }
   .rc-side {
     min-width: 0;
-    padding: 6px 8px;
+    padding: 3px 2px;
     border: 1px solid var(--border);
   }
   .rc-side.a {
@@ -643,9 +676,9 @@
   }
   .rc-name {
     display: block;
-    font-size: 0.68rem;
+    font-size: 0.56rem;
     font-weight: 600;
-    letter-spacing: 0.04em;
+    letter-spacing: 0;
     color: rgba(255, 255, 255, 0.78);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -653,7 +686,7 @@
   }
   .rc-pts {
     display: block;
-    font-size: 1.15rem;
+    font-size: 0.9rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     line-height: 1.1;
@@ -763,7 +796,12 @@
     gap: 8px;
   }
   .card .toolbar { margin-top: 8px; }
-  .toolbar .btn { flex: 1; min-width: 120px; }
+  .toolbar .btn {
+    flex: 1;
+    min-width: 0;
+    white-space: normal;
+    line-height: 1.15;
+  }
 
   .score-dock {
     display: flex;
@@ -845,13 +883,19 @@
       padding: 6px 10px;
       min-height: 36px;
     }
-    .hammer-mode-row { margin-top: 6px; padding-top: 6px; }
-    #hammerModeSeg button {
+    .controls-row { gap: 4px; }
+    .control-cluster { gap: 4px; }
+    .controls-row .lbl { font-size: 0.68rem; letter-spacing: 0; }
+    .controls-row .seg { padding: 2px; gap: 2px; }
+    .controls-row .seg button {
       padding: 6px 8px;
-      font-size: 0.72rem;
-      letter-spacing: 0.02em;
+      min-height: 36px;
+      min-width: 0;
+      font-size: 0.7rem;
+      letter-spacing: 0;
     }
     .custom-target { height: 36px; width: 56px; }
+    .controls-row .custom-target { height: 36px; width: 42px; font-size: 14px; padding: 0; }
 
     .zones { grid-template-columns: repeat(4, 1fr); gap: 6px; }
     .zones-title { margin-bottom: 6px; font-size: 0.72rem; }
@@ -871,10 +915,10 @@
 
     .section-title { margin-bottom: 4px; font-size: 0.72rem; }
     .bars { height: 56px; }
-    .round-log { gap: 6px; }
-    .round-card { padding: 6px 8px; }
-    .rc-side { padding: 4px 6px; }
-    .rc-pts { font-size: 1.05rem; }
+    .round-log { gap: 4px; }
+    .round-card { padding: 4px 3px 4px; }
+    .rc-side { padding: 2px; }
+    .rc-pts { font-size: 0.88rem; }
     .history-list { gap: 4px; }
     .hist-card { padding: 6px 8px; border-radius: 4px; }
     .hist-card .head { margin-bottom: 2px; }
@@ -890,14 +934,33 @@
     .target-chip { padding: 2px; }
     .score-big { font-size: 1.85rem; }
     .round-pts { font-size: 0.68rem; }
-    .round-card-n { font-size: 0.7rem; }
+    .round-card-n, .round-card-tot { font-size: 0.58rem; }
+    .rc-name { font-size: 0.52rem; }
+    .rc-pts { font-size: 0.82rem; }
     .modal h2 { font-size: 1.05rem; }
     .rules-body li { font-size: 0.92rem; }
+  }
+
+  @media (max-width: 340px) {
+    .controls-row { flex-wrap: wrap; }
+    .control-cluster { flex: 1 1 100%; }
+  }
+
+  @media (min-width: 701px) {
+    .round-card { padding: 8px 8px; }
+    .round-card-n, .round-card-tot { font-size: 0.75rem; }
+    .rc-side { padding: 6px 8px; }
+    .rc-name { font-size: 0.68rem; }
+    .rc-pts { font-size: 1.15rem; }
   }
 
   @keyframes soft-ripple {
     0% { transform: scale(0.15); opacity: 0.7; }
     100% { transform: scale(2.5); opacity: 0; }
+  }
+  @keyframes selected-ripple {
+    0% { transform: translate(-50%, -50%) scale(0.35); opacity: 0.7; }
+    100% { transform: translate(-50%, -50%) scale(1.35); opacity: 0; }
   }
   @keyframes team-win {
     0%, 100% { transform: translateY(0); }
@@ -980,7 +1043,8 @@
     flex-direction: column;
   }
   .modal.rules-modal h2 { flex: 0 0 auto; }
-  .rules-body {
+  .rules-body,
+  .old-history-body {
     position: relative;
     flex: 1 1 auto;
     min-height: 0;
@@ -989,6 +1053,30 @@
     overscroll-behavior: contain;
     margin: 0 0 12px;
     padding-right: 2px;
+  }
+  .lb-list {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .lb-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 0.92rem;
+    padding: 6px 8px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+  }
+  .lb-list .wins {
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    font-size: 0.82rem;
   }
   .rules-body ol {
     list-style: decimal;
@@ -1016,9 +1104,11 @@
 
   @media (prefers-reduced-motion: reduce) {
     .ripple,
+    .team.selected::after,
     .celebrate-layer i,
     .banner.celebrate .winner-line,
     .team.win-pulse { animation: none !important; }
+    .team.selected::after { display: none; }
     .celebrate-layer { display: none; }
   }
 </style>
@@ -1087,21 +1177,21 @@
       </div>
 
       <div class="card">
-        <div class="row spread">
-          <label class="lbl">Target</label>
-          <div class="row">
-            <div class="seg" id="targetSeg">
+        <div class="row spread controls-row">
+          <div class="control-cluster">
+            <label class="lbl" id="targetLabel">Target</label>
+            <div class="seg" id="targetSeg" role="group" aria-labelledby="targetLabel">
               <button type="button" data-target="15" class="on">15</button>
               <button type="button" data-target="21">21</button>
             </div>
-            <input class="custom-target" id="customTarget" type="number" min="1" max="99" placeholder="…" title="Custom target" inputmode="numeric">
+            <input class="custom-target" id="customTarget" type="number" min="1" max="99" placeholder="…" title="Custom target" inputmode="numeric" aria-label="Custom target">
           </div>
-        </div>
-        <div class="row spread hammer-mode-row">
-          <label class="lbl" id="hammerModeLabel">Hammer</label>
-          <div class="seg" id="hammerModeSeg" role="group" aria-labelledby="hammerModeLabel">
-            <button type="button" data-hammer-mode="winner" aria-pressed="false" title="The side that scores the round keeps the hammer">Winner</button>
-            <button type="button" data-hammer-mode="turns" class="on" aria-pressed="true" title="Hammer alternates each round">Take Turns</button>
+          <div class="control-cluster">
+            <label class="lbl" id="hammerModeLabel">Hammer</label>
+            <div class="seg" id="hammerModeSeg" role="group" aria-labelledby="hammerModeLabel">
+              <button type="button" data-hammer-mode="winner" aria-pressed="false" title="The side that scores the round keeps the hammer">Winner</button>
+              <button type="button" data-hammer-mode="turns" class="on" aria-pressed="true" title="Hammer alternates each round">Take Turns</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1122,12 +1212,13 @@
     <!-- HISTORY -->
     <section class="panel" id="panel-history">
       <div class="card">
-        <div class="section-title">History</div>
+        <div class="section-title">Recent History</div>
         <div class="history-list" id="historyList">
           <div class="empty">No past matches yet.</div>
         </div>
         <div class="toolbar">
-          <button type="button" class="btn danger" id="btnClearHistory">Clear All History</button>
+          <button type="button" class="btn" id="btnOldHistory" aria-haspopup="dialog" aria-controls="oldHistoryModal">View Old History</button>
+          <button type="button" class="btn danger" id="btnClearHistory">Clear Recent History</button>
         </div>
       </div>
     </section>
@@ -1173,6 +1264,18 @@
       </div>
       <div class="rules-actions">
         <button type="button" class="btn primary" id="rulesDone">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="oldHistoryModal" hidden>
+    <div class="modal card rules-modal" role="dialog" aria-modal="true" aria-labelledby="oldHistoryTitle">
+      <h2 id="oldHistoryTitle">Old History</h2>
+      <div class="old-history-body" id="oldHistoryBody">
+        <div class="empty">Loading old history…</div>
+      </div>
+      <div class="rules-actions">
+        <button type="button" class="btn primary" id="oldHistoryDone">Done</button>
       </div>
     </div>
   </div>
@@ -1293,16 +1396,40 @@
     var last = state.history[0];
     if (last && last.startedAt === state.startedAt) return;
 
-    state.history.unshift({
+    var entry = {
       startedAt: state.startedAt,
       endedAt: Date.now(),
       names: state.names.slice(),
       scores: state.scores.slice(),
       target: state.target,
       winner: state.winner,
-      rounds: state.rounds.slice()
-    });
+      rounds: state.rounds.slice(),
+      hammerMode: state.hammerMode
+    };
+    state.history.unshift(entry);
     if (state.history.length > 50) state.history.pop();
+    publishGame(entry);
+  }
+
+  function publishGame(entry) {
+    if (!entry || (entry.winner !== 0 && entry.winner !== 1)) return;
+    var payload = {
+      id: String(entry.startedAt),
+      playedAt: new Date(entry.endedAt || Date.now()).toISOString(),
+      names: [shownName(entry.names[0], 0), shownName(entry.names[1], 1)],
+      scores: [entry.scores[0], entry.scores[1]],
+      target: entry.target,
+      winner: entry.winner,
+      rounds: entry.rounds || [],
+      hammerMode: entry.hammerMode === 'winner' ? 'winner' : 'turns'
+    };
+    try {
+      fetch('/api/games', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(function () { /* keep the local archive when offline */ });
+    } catch (e) { /* offline */ }
   }
 
   function addPoints(pts) {
@@ -1495,14 +1622,14 @@
   function clearHistory() {
     askConfirm({
       title: 'Are you sure?',
-      message: 'Clear ALL match history? This cannot be undone.',
+      message: 'Clear recent history on this device? Old history stays saved.',
       danger: true
     }).then(function (ok) {
       if (!ok) return;
       state.history = [];
       save();
       renderHistory();
-      toast('History cleared');
+      toast('Recent history cleared');
     });
   }
 
@@ -1690,6 +1817,7 @@
   var confirmResolver = null;
   var winEpoch = 0;
   var winPromptTimer = 0;
+  var oldHistoryToken = 0;
 
   function askConfirm(opts) {
     return new Promise(function (resolve) {
@@ -1717,7 +1845,7 @@
     confirmResolver = null;
     var modal = $('confirmModal');
     if (modal) modal.hidden = true;
-    if (!rulesOpen()) document.body.classList.remove('modal-open');
+    if (!rulesOpen() && !oldHistoryOpen()) document.body.classList.remove('modal-open');
     if (resolve) resolve(!!result);
   }
 
@@ -1727,7 +1855,7 @@
   }
 
   function openRules() {
-    if (confirmResolver || !$('confirmModal').hidden) return;
+    if (confirmResolver || !$('confirmModal').hidden || oldHistoryOpen()) return;
     var modal = $('rulesModal');
     var body = $('rulesBody');
     if (body) body.scrollTop = 0;
@@ -1740,9 +1868,99 @@
     var modal = $('rulesModal');
     if (!modal || modal.hidden) return;
     modal.hidden = true;
-    if ($('confirmModal').hidden) document.body.classList.remove('modal-open');
+    if ($('confirmModal').hidden && !oldHistoryOpen()) document.body.classList.remove('modal-open');
     var btn = $('btnRules');
     if (btn) btn.focus();
+  }
+
+  function oldHistoryOpen() {
+    var modal = $('oldHistoryModal');
+    return !!(modal && !modal.hidden);
+  }
+
+  function openOldHistory() {
+    if (confirmResolver || !$('confirmModal').hidden || rulesOpen()) return;
+    var modal = $('oldHistoryModal');
+    modal.hidden = false;
+    document.body.classList.add('modal-open');
+    $('oldHistoryDone').focus();
+    loadOldHistory();
+  }
+
+  function closeOldHistory() {
+    var modal = $('oldHistoryModal');
+    if (!modal || modal.hidden) return;
+    oldHistoryToken += 1;
+    modal.hidden = true;
+    if ($('confirmModal').hidden && !rulesOpen()) document.body.classList.remove('modal-open');
+    var btn = $('btnOldHistory');
+    if (btn) btn.focus();
+  }
+
+  function renderOldHistory(gamesPayload, boardPayload) {
+    var games = gamesPayload && Array.isArray(gamesPayload.games) ? gamesPayload.games : [];
+    var leaders = boardPayload && Array.isArray(boardPayload.leaders) ? boardPayload.leaders : [];
+    var html = '';
+    if (leaders.length) {
+      html += '<div class="section-title">Leaderboard</div><ol class="lb-list">';
+      leaders.forEach(function (row) {
+        var wins = Number(row.wins) || 0;
+        var played = Number(row.games) || 0;
+        html += '<li><span>' + esc(row.name || 'Player') + '</span><span class="wins">' +
+          wins + (wins === 1 ? ' win' : ' wins') + ' · ' +
+          played + (played === 1 ? ' game' : ' games') + '</span></li>';
+      });
+      html += '</ol>';
+    }
+    html += '<div class="section-title">Matches</div>';
+    if (!games.length) {
+      html += '<div class="empty">No old matches yet.</div>';
+    } else {
+      html += '<div class="history-list">';
+      games.forEach(function (g) {
+        var names = g.names || [];
+        var scores = g.scores || [0, 0];
+        var when = formatDate(g.playedAt || g.endedAt);
+        var winner = g.winnerName || '';
+        var result = winner
+          ? '<span class="w">' + esc(winner) + ' won</span> · ' + esc(scores[0]) + ' – ' + esc(scores[1]) + ' (to ' + esc(g.target) + ')'
+          : esc(scores[0]) + ' – ' + esc(scores[1]);
+        var rounds = g.roundCount != null ? g.roundCount : 0;
+        html += '<div class="hist-card">' +
+          '<div class="head"><span>' + esc(when) + '</span><span>' + rounds + ' rounds</span></div>' +
+          '<div class="names">' + esc(shownName(names[0], 0)) + ' vs ' + esc(shownName(names[1], 1)) + '</div>' +
+          '<div class="result">' + result + '</div></div>';
+      });
+      html += '</div>';
+    }
+    $('oldHistoryBody').innerHTML = html;
+  }
+
+  function showOldHistoryError() {
+    $('oldHistoryBody').innerHTML =
+      '<div class="empty">Could not load old history. Recent games on this device are still here.</div>' +
+      '<div class="rules-actions"><button type="button" class="btn" id="oldHistoryRetry">Try again</button></div>';
+  }
+
+  function fetchJson(url) {
+    return fetch(url).then(function (res) {
+      if (!res.ok) throw new Error(String(res.status));
+      return res.json();
+    });
+  }
+
+  function loadOldHistory() {
+    var token = ++oldHistoryToken;
+    $('oldHistoryBody').innerHTML = '<div class="empty">Loading old history…</div>';
+    var gamesReq = fetchJson('/api/games?limit=40');
+    var boardReq = fetchJson('/api/leaderboard?limit=8').catch(function () { return null; });
+    Promise.all([gamesReq, boardReq]).then(function (pair) {
+      if (token !== oldHistoryToken) return;
+      renderOldHistory(pair[0], pair[1]);
+    }).catch(function () {
+      if (token !== oldHistoryToken) return;
+      showOldHistoryError();
+    });
   }
 
   function commitTarget(next) {
@@ -1764,7 +1982,7 @@
   function scheduleWinPrompt(epoch, delay) {
     winPromptTimer = setTimeout(function () {
       if (epoch !== winEpoch || !state.gameOver || state.winner === null) return;
-      if (confirmResolver || rulesOpen()) {
+      if (confirmResolver || rulesOpen() || oldHistoryOpen()) {
         scheduleWinPrompt(epoch, 280);
         return;
       }
@@ -1964,6 +2182,12 @@
   $('btnNewGame').addEventListener('click', function () { newGame(true); });
   $('btnResetGame').addEventListener('click', resetScores);
   $('btnClearHistory').addEventListener('click', clearHistory);
+  $('btnOldHistory').addEventListener('click', openOldHistory);
+  $('oldHistoryDone').addEventListener('click', closeOldHistory);
+  $('oldHistoryModal').addEventListener('click', function (e) {
+    if (e.target === $('oldHistoryModal')) closeOldHistory();
+    if (e.target && e.target.id === 'oldHistoryRetry') loadOldHistory();
+  });
   $('confirmCancel').addEventListener('click', function () { closeConfirm(false); });
   $('confirmOk').addEventListener('click', function () { closeConfirm(true); });
   $('confirmModal').addEventListener('click', function (e) {
@@ -1979,6 +2203,11 @@
     if (!$('confirmModal').hidden) {
       e.preventDefault();
       closeConfirm(false);
+      return;
+    }
+    if (oldHistoryOpen()) {
+      e.preventDefault();
+      closeOldHistory();
       return;
     }
     if (rulesOpen()) {

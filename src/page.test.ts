@@ -138,4 +138,44 @@ test("hammer mode defaults to take turns and can keep the winner", () => {
   assert.match(html, /state\.hammer = nextHammer\(r0, r1\);/);
   assert.ok(html.indexOf('id="hammerModeSeg"') > html.indexOf('id="targetSeg"'));
   assert.ok(html.indexOf('id="hammerModeSeg"') < html.indexOf('id="panel-stats"'));
+  const controls = html.slice(html.indexOf('class="row spread controls-row"'), html.indexOf('id="panel-stats"'));
+  assert.ok(controls.includes('id="targetSeg"'));
+  assert.ok(controls.includes('id="hammerModeSeg"'));
+  assert.equal(controls.includes("hammer-mode-row"), false);
+  assert.match(html, /\.controls-row\s*\{[^}]*flex-wrap:\s*nowrap/);
+  assert.match(html, /@media \(max-width: 340px\)[\s\S]*\.controls-row\s*\{[^}]*flex-wrap:\s*wrap/);
+});
+
+test("round cards sit three across and the selected side keeps rippling", () => {
+  const html = page("public/index.html");
+  assert.match(html, /\.round-log\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(html, /\.team\.selected::after\s*\{[^}]*animation:\s*selected-ripple[^}]*infinite/);
+  assert.match(html, /@keyframes selected-ripple/);
+  assert.match(html, /prefers-reduced-motion[\s\S]*\.team\.selected::after/);
+});
+
+test("recent history stays local and old history comes from the worker", () => {
+  const html = page("public/index.html");
+  assert.equal(html.includes("Clear All History"), false);
+  assert.equal(html.includes(">Clear Recent History</button>"), true);
+  assert.equal(html.includes('id="btnOldHistory"'), true);
+  assert.equal(html.includes(">View Old History</button>"), true);
+  assert.equal(html.includes('id="oldHistoryModal"'), true);
+  assert.equal(html.includes("Loading old history"), true);
+  assert.equal(html.includes("No old matches yet."), true);
+  assert.equal(html.includes("Could not load old history."), true);
+  assert.match(html, /fetchJson\('\/api\/games\?limit=40'\)/);
+  assert.match(html, /fetchJson\('\/api\/leaderboard\?limit=8'\)/);
+  const clearStart = html.indexOf("function clearHistory()");
+  const clearEnd = html.indexOf("function formatDate");
+  assert.ok(clearStart > 0 && clearEnd > clearStart);
+  const clearFn = html.slice(clearStart, clearEnd);
+  assert.equal(clearFn.includes("fetch"), false);
+  assert.match(clearFn, /state\.history = \[\]/);
+  assert.match(clearFn, /Old history stays saved/);
+  const archiveStart = html.indexOf("function archiveIfWon()");
+  const archiveEnd = html.indexOf("function publishGame");
+  assert.ok(archiveStart > 0 && archiveEnd > archiveStart);
+  assert.match(html.slice(archiveStart, archiveEnd), /publishGame\(entry\)/);
+  assert.match(html, /fetch\('\/api\/games'/);
 });
