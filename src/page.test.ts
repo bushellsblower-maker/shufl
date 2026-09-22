@@ -75,3 +75,67 @@ test("in-app confirm, team colours, and round cards", () => {
   assert.match(html, /\.btn\.danger\s*\{[^}]*background:\s*#c0392b/);
   assert.match(html, /\.btn\.neutral\s*\{[^}]*background:\s*#9a9a9a/);
 });
+
+test("rules button opens an in-app rules modal", () => {
+  const html = page("public/index.html");
+  assert.equal(html.includes('id="btnRules"'), true);
+  assert.match(html, /<header>[\s\S]*id="btnRules"[^>]*>Rules<\/button>[\s\S]*<\/header>/);
+  assert.ok(html.indexOf('id="btnRules"') > html.indexOf("<h1>SHUFL</h1>"));
+  assert.equal(html.includes('id="rulesModal"'), true);
+  assert.equal(html.includes('id="rulesTitle">Rules</h2>'), true);
+  assert.equal(html.includes('id="rulesDone">Done</button>'), true);
+  assert.equal(html.includes("openRules"), true);
+  assert.equal(html.includes("closeRules"), true);
+  assert.equal(html.includes('window.alert'), false);
+  const rules = [
+    "Each player (or team) has 4 weights. Players alternate shots until all 8 have been played. That is one round.",
+    "A weight must fully clear the foul line to stay in play. Anything short is removed.",
+    "Weights that fall off the table or into the gutter are out for that round.",
+    "Only one side scores each round: the side whose weight is closest to the far end.",
+    "That side scores every one of its weights that sits farther than the opponent’s farthest weight.",
+    "Scoring zones (weight fully past the line, viewed from above):",
+    "Zone 1: 1 point",
+    "Zone 2: 2 points",
+    "Zone 3: 3 points",
+    "Zone 4: 4 points",
+    "A weight touching a zone line counts as the lower zone.",
+    "A hanger (any part hanging over the far end, not the side, without falling) scores 5 points.",
+    "After the round is scored, play the next round from the other end.",
+    "First to the agreed total (usually 15 or 21) wins.",
+    "The hammer is the last weight of the round. Either the round winner keeps it, or the teams take turns.",
+  ];
+  let cursor = html.indexOf('id="rulesBody"');
+  assert.ok(cursor > 0);
+  for (const line of rules) {
+    const at = html.indexOf(line, cursor);
+    assert.ok(at > cursor, line);
+    cursor = at + line.length;
+  }
+  assert.ok(html.indexOf('id="rulesModal"') > html.indexOf('id="confirmModal"'));
+  assert.equal(html.includes('id="confirmCancel">Cancel</button>'), true);
+  assert.equal(html.includes('id="confirmOk">Confirm</button>'), true);
+});
+
+test("hammer mode defaults to take turns and can keep the winner", () => {
+  const html = page("public/index.html");
+  assert.equal(html.includes('id="hammerModeSeg"'), true);
+  assert.equal(html.includes('data-hammer-mode="winner"'), true);
+  assert.equal(html.includes('data-hammer-mode="turns"'), true);
+  assert.match(html, />Winner<\/button>/);
+  assert.match(html, />Take Turns<\/button>/);
+  assert.match(html, /hammerMode:\s*'turns'/);
+  assert.match(html, /hammerMode: state\.hammerMode/);
+  assert.match(html, /hammerMode === 'winner' \? 'winner' : 'turns'/);
+  const fnStart = html.indexOf("function nextHammer(r0, r1)");
+  const fnEnd = html.indexOf("function undo()");
+  assert.ok(fnStart > 0 && fnEnd > fnStart);
+  const fn = html.slice(fnStart, fnEnd);
+  assert.match(fn, /state\.hammerMode === 'winner'/);
+  assert.match(fn, /if \(r0 > r1\) return 0;/);
+  assert.match(fn, /if \(r1 > r0\) return 1;/);
+  assert.match(fn, /return state\.hammer;/);
+  assert.match(fn, /return state\.hammer === 0 \? 1 : 0;/);
+  assert.match(html, /state\.hammer = nextHammer\(r0, r1\);/);
+  assert.ok(html.indexOf('id="hammerModeSeg"') > html.indexOf('id="targetSeg"'));
+  assert.ok(html.indexOf('id="hammerModeSeg"') < html.indexOf('id="panel-stats"'));
+});

@@ -103,16 +103,27 @@
     justify-content: space-between;
     gap: 8px;
     padding: 12px 4px 8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
   .brand {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
+    flex: 0 1 auto;
     padding: 6px 12px 7px;
     background: rgba(18, 19, 22, 0.9);
     border: 2px solid var(--border);
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 6px 16px rgba(0, 0, 0, 0.35);
+  }
+  .btn.header-rules {
+    flex: 0 0 auto;
+    align-self: center;
+    min-height: 40px;
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
   }
   header h1 {
     font-family: var(--display);
@@ -422,6 +433,18 @@
     text-align: center;
     font-size: 16px;
     font-weight: 700;
+  }
+  .hammer-mode-row {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(106, 100, 88, 0.45);
+  }
+  .hammer-mode-row .lbl { flex: 0 0 auto; }
+  #hammerModeSeg { flex: 0 1 auto; min-width: 0; margin-left: auto; }
+  #hammerModeSeg button {
+    flex: 0 1 auto;
+    min-width: 0;
+    white-space: nowrap;
   }
 
   /* Zone buttons */
@@ -796,6 +819,7 @@
     }
     header h1 { font-size: 1.35rem; letter-spacing: 0.1em; }
     .brand p { font-size: 0.58rem; letter-spacing: 0.12em; }
+    .btn.header-rules { min-height: 40px; padding: 6px 10px; font-size: 0.78rem; }
 
     main { gap: 8px; padding-bottom: 8px; }
     .panel { gap: 8px; }
@@ -820,6 +844,12 @@
     .seg button {
       padding: 6px 10px;
       min-height: 36px;
+    }
+    .hammer-mode-row { margin-top: 6px; padding-top: 6px; }
+    #hammerModeSeg button {
+      padding: 6px 8px;
+      font-size: 0.72rem;
+      letter-spacing: 0.02em;
     }
     .custom-target { height: 36px; width: 56px; }
 
@@ -862,6 +892,7 @@
     .round-pts { font-size: 0.68rem; }
     .round-card-n { font-size: 0.7rem; }
     .modal h2 { font-size: 1.05rem; }
+    .rules-body li { font-size: 0.92rem; }
   }
 
   @keyframes soft-ripple {
@@ -942,6 +973,46 @@
     grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
+  .modal.rules-modal {
+    width: min(480px, 100%);
+    max-height: min(86dvh, 720px);
+    display: flex;
+    flex-direction: column;
+  }
+  .modal.rules-modal h2 { flex: 0 0 auto; }
+  .rules-body {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    margin: 0 0 12px;
+    padding-right: 2px;
+  }
+  .rules-body ol {
+    list-style: decimal;
+    margin: 0;
+    padding-left: 1.35rem;
+  }
+  .rules-body ol > li + li { margin-top: 8px; }
+  .rules-body li {
+    color: var(--text);
+    font-size: 0.98rem;
+    line-height: 1.35;
+  }
+  .rules-body ul {
+    list-style: disc;
+    margin: 6px 0 0;
+    padding-left: 1.15rem;
+  }
+  .rules-body ul > li + li { margin-top: 2px; }
+  .rules-actions {
+    position: relative;
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .ripple,
@@ -960,6 +1031,7 @@
       <h1>SHUFL</h1>
       <p>Shuffleboard scorekeeper</p>
     </div>
+    <button type="button" class="btn header-rules" id="btnRules" aria-haspopup="dialog" aria-controls="rulesModal">Rules</button>
   </header>
 
   <main>
@@ -1025,6 +1097,13 @@
             <input class="custom-target" id="customTarget" type="number" min="1" max="99" placeholder="…" title="Custom target" inputmode="numeric">
           </div>
         </div>
+        <div class="row spread hammer-mode-row">
+          <label class="lbl" id="hammerModeLabel">Hammer</label>
+          <div class="seg" id="hammerModeSeg" role="group" aria-labelledby="hammerModeLabel">
+            <button type="button" data-hammer-mode="winner" aria-pressed="false" title="The side that scores the round keeps the hammer">Winner</button>
+            <button type="button" data-hammer-mode="turns" class="on" aria-pressed="true" title="Hammer alternates each round">Take Turns</button>
+          </div>
+        </div>
       </div>
 
     </section>
@@ -1067,6 +1146,37 @@
     </div>
   </div>
 
+  <div class="modal-backdrop" id="rulesModal" hidden>
+    <div class="modal card rules-modal" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
+      <h2 id="rulesTitle">Rules</h2>
+      <div class="rules-body" id="rulesBody">
+        <ol>
+          <li>Each player (or team) has 4 weights. Players alternate shots until all 8 have been played. That is one round.</li>
+          <li>A weight must fully clear the foul line to stay in play. Anything short is removed.</li>
+          <li>Weights that fall off the table or into the gutter are out for that round.</li>
+          <li>Only one side scores each round: the side whose weight is closest to the far end.</li>
+          <li>That side scores every one of its weights that sits farther than the opponent’s farthest weight.</li>
+          <li>Scoring zones (weight fully past the line, viewed from above):
+            <ul>
+              <li>Zone 1: 1 point</li>
+              <li>Zone 2: 2 points</li>
+              <li>Zone 3: 3 points</li>
+              <li>Zone 4: 4 points</li>
+            </ul>
+          </li>
+          <li>A weight touching a zone line counts as the lower zone.</li>
+          <li>A hanger (any part hanging over the far end, not the side, without falling) scores 5 points.</li>
+          <li>After the round is scored, play the next round from the other end.</li>
+          <li>First to the agreed total (usually 15 or 21) wins.</li>
+          <li>The hammer is the last weight of the round. Either the round winner keeps it, or the teams take turns.</li>
+        </ol>
+      </div>
+      <div class="rules-actions">
+        <button type="button" class="btn primary" id="rulesDone">Done</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -1080,6 +1190,9 @@
     scores: [0, 0],
     roundPts: [0, 0],
     hammer: 0,
+    // 'turns' matches the previous behaviour: hammer alternates every round.
+    // 'winner': the side with more points that round keeps the hammer; a tie leaves it.
+    hammerMode: 'turns',
     scoringFor: 0,
     target: 15,
     roundNum: 1,
@@ -1104,6 +1217,7 @@
         state.roundPts = data.current.roundPts || [0, 0];
         state.rounds = data.current.rounds || [];
         state.undoStack = data.current.undoStack || [];
+        state.hammerMode = data.current.hammerMode === 'winner' ? 'winner' : 'turns';
       }
       if (Array.isArray(data.history)) state.history = data.history;
     } catch (e) { /* ignore corrupt */ }
@@ -1117,6 +1231,7 @@
           scores: state.scores,
           roundPts: state.roundPts,
           hammer: state.hammer,
+          hammerMode: state.hammerMode,
           scoringFor: state.scoringFor,
           target: state.target,
           roundNum: state.roundNum,
@@ -1242,8 +1357,7 @@
 
     state.roundPts = [0, 0];
     state.roundNum += 1;
-    // Hammer typically alternates each frame/round
-    state.hammer = state.hammer === 0 ? 1 : 0;
+    state.hammer = nextHammer(r0, r1);
     state.scoringFor = state.hammer === 0 ? 1 : 0; // non-hammer often scores first visually; keep selectable
 
     pushUndo({
@@ -1262,6 +1376,15 @@
     render();
     save();
     if (state.gameOver && !wasOver) celebrateWin();
+  }
+
+  function nextHammer(r0, r1) {
+    if (state.hammerMode === 'winner') {
+      if (r0 > r1) return 0;
+      if (r1 > r0) return 1;
+      return state.hammer;
+    }
+    return state.hammer === 0 ? 1 : 0;
   }
 
   function undo() {
@@ -1439,6 +1562,11 @@
 
     $('hammerBtn0').classList.toggle('on', state.hammer === 0);
     $('hammerBtn1').classList.toggle('on', state.hammer === 1);
+    document.querySelectorAll('#hammerModeSeg button').forEach(function (b) {
+      var on = b.getAttribute('data-hammer-mode') === state.hammerMode;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
 
     var pad = document.querySelector('.score-dock');
     if (pad) {
@@ -1589,8 +1717,32 @@
     confirmResolver = null;
     var modal = $('confirmModal');
     if (modal) modal.hidden = true;
-    document.body.classList.remove('modal-open');
+    if (!rulesOpen()) document.body.classList.remove('modal-open');
     if (resolve) resolve(!!result);
+  }
+
+  function rulesOpen() {
+    var modal = $('rulesModal');
+    return !!(modal && !modal.hidden);
+  }
+
+  function openRules() {
+    if (confirmResolver || !$('confirmModal').hidden) return;
+    var modal = $('rulesModal');
+    var body = $('rulesBody');
+    if (body) body.scrollTop = 0;
+    modal.hidden = false;
+    document.body.classList.add('modal-open');
+    $('rulesDone').focus();
+  }
+
+  function closeRules() {
+    var modal = $('rulesModal');
+    if (!modal || modal.hidden) return;
+    modal.hidden = true;
+    if ($('confirmModal').hidden) document.body.classList.remove('modal-open');
+    var btn = $('btnRules');
+    if (btn) btn.focus();
   }
 
   function commitTarget(next) {
@@ -1612,7 +1764,7 @@
   function scheduleWinPrompt(epoch, delay) {
     winPromptTimer = setTimeout(function () {
       if (epoch !== winEpoch || !state.gameOver || state.winner === null) return;
-      if (confirmResolver) {
+      if (confirmResolver || rulesOpen()) {
         scheduleWinPrompt(epoch, 280);
         return;
       }
@@ -1784,6 +1936,14 @@
     });
   });
 
+  document.querySelectorAll('#hammerModeSeg button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      state.hammerMode = b.getAttribute('data-hammer-mode') === 'winner' ? 'winner' : 'turns';
+      render();
+      save();
+    });
+  });
+
   document.querySelectorAll('.zone-btn').forEach(function (b) {
     b.addEventListener('click', function () {
       addPoints(parseInt(b.getAttribute('data-pts'), 10));
@@ -1809,11 +1969,21 @@
   $('confirmModal').addEventListener('click', function (e) {
     if (e.target === $('confirmModal')) closeConfirm(false);
   });
+  $('btnRules').addEventListener('click', openRules);
+  $('rulesDone').addEventListener('click', closeRules);
+  $('rulesModal').addEventListener('click', function (e) {
+    if (e.target === $('rulesModal')) closeRules();
+  });
   document.addEventListener('keydown', function (e) {
-    if ($('confirmModal').hidden) return;
-    if (e.key === 'Escape') {
+    if (e.key !== 'Escape') return;
+    if (!$('confirmModal').hidden) {
       e.preventDefault();
       closeConfirm(false);
+      return;
+    }
+    if (rulesOpen()) {
+      e.preventDefault();
+      closeRules();
     }
   });
 
