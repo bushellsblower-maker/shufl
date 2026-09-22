@@ -48,3 +48,30 @@ test("primary flow is one page with on-board scoring", () => {
   assert.equal(html.includes("syncDockPad"), false);
   assert.equal(html.includes('src="'), false);
 });
+
+test("in-app confirm, team colours, and round cards", () => {
+  const html = page("public/index.html");
+  assert.equal(/\bconfirm\s*\(/.test(html), false);
+  assert.equal(html.includes("window.confirm"), false);
+  assert.equal(html.includes('id="confirmModal"'), true);
+  assert.equal(html.includes('id="confirmTitle"'), true);
+  assert.equal(html.includes('id="confirmMessage"'), true);
+  assert.equal(html.includes('id="confirmCancel">Cancel</button>'), true);
+  assert.equal(html.includes('id="confirmOk">Confirm</button>'), true);
+  assert.equal(html.includes('class="btn neutral" id="btnClearRound"'), true);
+  assert.equal(html.includes('class="btn danger" id="btnResetGame"'), true);
+  assert.equal(html.includes('class="btn danger" id="btnClearHistory"'), true);
+  assert.ok(html.indexOf('id="btnNewGame"') < html.indexOf('id="btnResetGame"'));
+  assert.ok(html.indexOf('id="btnResetGame"') < html.indexOf('id="targetSeg"'));
+  assert.equal(html.includes("round-item"), false);
+  assert.equal(html.includes('class="round-card"'), true);
+  assert.equal(html.includes("navigator.vibrate"), true);
+  assert.equal(html.includes("AudioContext"), true);
+  assert.equal(html.includes("playRipple"), true);
+  assert.equal(html.includes("#a8324c"), true);
+  assert.equal(html.includes("#1f4f96"), true);
+  assert.match(html, /\.btn\.neutral\s*\{[^}]*color:\s*#111/);
+  assert.match(html, /\.btn\.danger\s*\{[^}]*color:\s*#fff/);
+  assert.match(html, /\.btn\.danger\s*\{[^}]*background:\s*#c0392b/);
+  assert.match(html, /\.btn\.neutral\s*\{[^}]*background:\s*#9a9a9a/);
+});
