@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS games (
 CREATE INDEX IF NOT EXISTS idx_games_played_at ON games (played_at DESC);
 
 -- Case-normalized win counts. A name on either side counts as a game played.
-CREATE VIEW leaderboard AS
+CREATE VIEW IF NOT EXISTS leaderboard AS
 SELECT
   name_key,
   MAX(display_name) AS name,

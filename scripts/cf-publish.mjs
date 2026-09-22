@@ -63,13 +63,14 @@ function wrangler(args, { capture = false } = {}) {
     const detail = [result.stderr, result.stdout].filter(Boolean).join("\n").trim();
     throw new Error(detail || `wrangler ${args.join(" ")} failed (${result.status})`);
   }
-  return result.stdout ?? "";
+  return { stdout: result.stdout ?? "", stderr: result.stderr ?? "" };
 }
 
 function ensureDatabase() {
   let rows = [];
   try {
-    rows = parseD1List(wrangler(["d1", "list", "--json"], { capture: true }));
+    const listed = wrangler(["d1", "list", "--json"], { capture: true });
+    rows = parseD1List(listed.stdout.trim() ? listed.stdout : listed.stderr);
   } catch (error) {
     fail(`Could not list D1 databases. Check CLOUDFLARE_API_TOKEN permissions include D1 edit.\n${error.message}`);
   }
@@ -83,8 +84,10 @@ function ensureDatabase() {
   console.log(`Creating D1 database ${DB_NAME}…`);
   let stdout = "";
   try {
-    stdout = wrangler(["d1", "create", DB_NAME, "--location", "weur"], { capture: true });
-    process.stdout.write(stdout);
+    const createdOut = wrangler(["d1", "create", DB_NAME, "--location", "weur"], { capture: true });
+    process.stdout.write(createdOut.stdout);
+    if (createdOut.stderr) process.stderr.write(createdOut.stderr);
+    stdout = `${createdOut.stdout}\n${createdOut.stderr}`;
   } catch (error) {
     fail(`Could not create D1 database ${DB_NAME}.\n${error.message}`);
   }

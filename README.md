@@ -43,13 +43,15 @@ Same deploy command, from the Cloudflare dashboard:
 
 Workers Builds uses the connected Cloudflare account. You do not add `CLOUDFLARE_API_TOKEN` to the Git repository for that path. GitHub Actions is enough once the two secrets above exist.
 
+`wrangler.jsonc` does not commit a `database_id`. The default Workers Builds command, `npx wrangler deploy`, provisions D1 database `shufl` and binds it. The Worker creates the games table and leaderboard view on the first history request if migrations have not been applied yet. Set the deploy command to `npm run deploy` when you want the publish script to apply `migrations/` before the Worker starts.
+
 ## Data
 
 The scoring page does not list past games. **History**, next to New Game, opens them in a modal: recent matches from this device and saved matches from `GET /api/games`, plus a short win list from `GET /api/leaderboard`.
 
 Each row has an **X**. Confirming in the in-app dialog removes a device-only game from `localStorage`. A game that was saved (or loaded from D1) is also removed with `DELETE /api/games/:id`.
 
-A finished game is `POST`ed to `/api/games`. If the device is offline, the local copy is kept and the post is skipped. There is no admin login and no button that clears every game at once.
+A finished game is `POST`ed to `/api/games`. If the device is offline, the local copy is kept and the post is skipped. There is no admin login and no button that clears every game at once. The games table and leaderboard view are created by `migrations/0001_games.sql`, and the Worker applies that same SQL if the database is still empty.
 
 ## Layout
 
