@@ -1,4 +1,4 @@
-import { parseGameBody, parseLimit, roundCount } from "./games.ts";
+import { parseGameBody, parseGameId, parseLimit, roundCount } from "./games.ts";
 
 const MAX_BODY = 48_000;
 
@@ -28,6 +28,8 @@ FROM games
 ORDER BY played_at DESC, id DESC
 LIMIT ?
 `;
+
+const DELETE_GAME = `DELETE FROM games WHERE id = ?`;
 
 const LIST_LEADERS = `
 SELECT name, wins, games
@@ -155,8 +157,20 @@ async function createGame(request: Request, env: Env): Promise<Response> {
   return json({ ok: true, id: row.id });
 }
 
+async function deleteGame(env: Env, id: string): Promise<Response> {
+  const result = await env.DB.prepare(DELETE_GAME).bind(id).run();
+  if (!result.meta.changes) return json({ error: "Game not found" }, 404);
+  return json({ ok: true, id });
+}
+
 export async function handleApi(request: Request, env: Env, url: URL): Promise<Response> {
   try {
+    if (url.pathname.startsWith("/api/games/")) {
+      if (request.method !== "DELETE") return json({ error: "Method not allowed" }, 405);
+      const id = parseGameId(url.pathname.slice("/api/games/".length));
+      if (!id) return json({ error: "Invalid game id" }, 400);
+      return deleteGame(env, id);
+    }
     if (url.pathname === "/api/games" && request.method === "GET") return listGames(env, url);
     if (url.pathname === "/api/games" && request.method === "POST") return createGame(request, env);
     if (url.pathname === "/api/leaderboard" && request.method === "GET") return listLeaders(env, url);

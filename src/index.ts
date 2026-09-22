@@ -19,7 +19,11 @@ function recordAuditHit(env: Env, url: URL, status: number): void {
 export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname === "/api/games" || url.pathname === "/api/leaderboard") {
+    if (
+      url.pathname === "/api/games" ||
+      url.pathname.startsWith("/api/games/") ||
+      url.pathname === "/api/leaderboard"
+    ) {
       const response = await handleApi(request, env, url);
       recordAuditHit(env, url, response.status);
       return response;

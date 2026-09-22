@@ -19,8 +19,8 @@ function memoryDb() {
         bind(...values: Array<string | number | null>) {
           return {
             async run() {
-              statement.run(...values);
-              return { success: true as const, results: [] };
+              const info = statement.run(...values);
+              return { success: true as const, results: [], meta: { changes: Number(info.changes) || 0 } };
             },
             async all() {
               return { success: true as const, results: statement.all(...values) };
@@ -159,11 +159,49 @@ test("api rejects a bad game and an unknown path", async () => {
     new URL("https://shufl.cybush.uk/api/games"),
   );
   assert.equal(missing.status, 405);
+
+  const removed = await handleApi(
+    new Request("https://shufl.cybush.uk/api/games/game-1", { method: "DELETE" }),
+    env,
+    new URL("https://shufl.cybush.uk/api/games/game-1"),
+  );
+  assert.equal(removed.status, 404);
+
+  const saved = await handleApi(
+    new Request("https://shufl.cybush.uk/api/games", {
+      method: "POST",
+      body: JSON.stringify(finished),
+    }),
+    env,
+    new URL("https://shufl.cybush.uk/api/games"),
+  );
+  assert.equal(saved.status, 200);
+  const deleted = await handleApi(
+    new Request("https://shufl.cybush.uk/api/games/game-1", { method: "DELETE" }),
+    env,
+    new URL("https://shufl.cybush.uk/api/games/game-1"),
+  );
+  assert.equal(deleted.status, 200);
+  const after = await handleApi(
+    new Request("https://shufl.cybush.uk/api/games"),
+    env,
+    new URL("https://shufl.cybush.uk/api/games"),
+  );
+  const body = (await after.json()) as { games: unknown[] };
+  assert.deepEqual(body.games, []);
+
+  const badId = await handleApi(
+    new Request("https://shufl.cybush.uk/api/games/nope%20id", { method: "DELETE" }),
+    env,
+    new URL("https://shufl.cybush.uk/api/games/nope%20id"),
+  );
+  assert.equal(badId.status, 400);
 });
 
 test("worker routes history before assets", () => {
   const src = readFileSync(join(root, "src/index.ts"), "utf8");
   assert.match(src, /pathname === "\/api\/games"/);
+  assert.match(src, /pathname\.startsWith\("\/api\/games\/"\)/);
   assert.match(src, /pathname === "\/api\/leaderboard"/);
   assert.ok(src.indexOf("handleApi") < src.indexOf("env.ASSETS.fetch"));
   const publish = readFileSync(join(root, "scripts/cf-publish.mjs"), "utf8");

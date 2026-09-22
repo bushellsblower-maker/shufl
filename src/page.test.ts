@@ -34,7 +34,7 @@ test("primary flow is one page with on-board scoring", () => {
   assert.equal(html.includes('data-team="1"'), true);
   assert.equal(html.includes('class="score-dock for-p1"'), true);
   assert.equal(html.includes("shuffleboard-scoreboard-v1"), true);
-  for (const id of ["btnUndo", "btnEndRound", "btnClearRound", "btnNewGame", "btnResetGame", "btnClearHistory", "roundLog", "historyList"]) {
+  for (const id of ["btnUndo", "btnEndRound", "btnClearRound", "btnHistory", "btnNewGame", "btnResetGame", "roundLog"]) {
     assert.equal(html.includes(`id="${id}"`), true, id);
   }
   for (const pts of ["1", "2", "3", "4"]) {
@@ -60,7 +60,7 @@ test("in-app confirm, team colours, and round cards", () => {
   assert.equal(html.includes('id="confirmOk">Confirm</button>'), true);
   assert.equal(html.includes('class="btn neutral" id="btnClearRound"'), true);
   assert.equal(html.includes('class="btn danger" id="btnResetGame"'), true);
-  assert.equal(html.includes('class="btn danger" id="btnClearHistory"'), true);
+  assert.equal(html.includes("btnClearHistory"), false);
   assert.ok(html.indexOf('id="btnNewGame"') < html.indexOf('id="btnResetGame"'));
   assert.ok(html.indexOf('id="btnResetGame"') < html.indexOf('id="targetSeg"'));
   assert.equal(html.includes("round-item"), false);
@@ -154,28 +154,34 @@ test("round cards sit three across and the selected side keeps rippling", () => 
   assert.match(html, /prefers-reduced-motion[\s\S]*\.team\.selected::after/);
 });
 
-test("recent history stays local and old history comes from the worker", () => {
+test("history is a modal with per-game delete", () => {
   const html = page("public/index.html");
   assert.equal(html.includes("Clear All History"), false);
-  assert.equal(html.includes(">Clear Recent History</button>"), true);
-  assert.equal(html.includes('id="btnOldHistory"'), true);
-  assert.equal(html.includes(">View Old History</button>"), true);
-  assert.equal(html.includes('id="oldHistoryModal"'), true);
-  assert.equal(html.includes("Loading old history"), true);
-  assert.equal(html.includes("No old matches yet."), true);
-  assert.equal(html.includes("Could not load old history."), true);
+  assert.equal(html.includes("Clear Recent History"), false);
+  assert.equal(html.includes("View Old History"), false);
+  assert.equal(html.includes('id="btnClearHistory"'), false);
+  assert.equal(html.includes('id="historyList"'), false);
+  assert.equal(html.includes('id="panel-history"'), false);
+  assert.equal(html.includes('id="btnHistory"'), true);
+  assert.match(html, />History<\/button>/);
+  assert.equal(html.includes('id="historyModal"'), true);
+  assert.equal(html.includes('id="historyTitle">History</h2>'), true);
+  assert.equal(html.includes("Loading history…"), true);
+  assert.equal(html.includes("No games yet."), true);
+  assert.match(html, /class="hist-x"/);
+  assert.match(html, /aria-label="Delete this game"/);
+  assert.match(html, /Delete this game from history\?/);
+  assert.match(html, /title: 'Are you sure\?'/);
+  assert.equal(/\bconfirm\s*\(/.test(html), false);
+  assert.match(html, /method: 'DELETE'/);
+  assert.match(html, /\/api\/games\/' \+ encodeURIComponent\(id\)/);
   assert.match(html, /fetchJson\('\/api\/games\?limit=40'\)/);
   assert.match(html, /fetchJson\('\/api\/leaderboard\?limit=8'\)/);
-  const clearStart = html.indexOf("function clearHistory()");
-  const clearEnd = html.indexOf("function formatDate");
-  assert.ok(clearStart > 0 && clearEnd > clearStart);
-  const clearFn = html.slice(clearStart, clearEnd);
-  assert.equal(clearFn.includes("fetch"), false);
-  assert.match(clearFn, /state\.history = \[\]/);
-  assert.match(clearFn, /Old history stays saved/);
+  assert.match(html, /if \(!row\.remote\)/);
+  assert.ok(html.indexOf('id="btnHistory"') > html.indexOf('id="panel-play"'));
+  assert.ok(html.indexOf('id="btnHistory"') < html.indexOf('id="panel-stats"'));
   const archiveStart = html.indexOf("function archiveIfWon()");
   const archiveEnd = html.indexOf("function publishGame");
   assert.ok(archiveStart > 0 && archiveEnd > archiveStart);
   assert.match(html.slice(archiveStart, archiveEnd), /publishGame\(entry\)/);
-  assert.match(html, /fetch\('\/api\/games'/);
 });

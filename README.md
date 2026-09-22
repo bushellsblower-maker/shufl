@@ -45,9 +45,11 @@ Workers Builds uses the connected Cloudflare account. You do not add `CLOUDFLARE
 
 ## Data
 
-The scorekeeper reads and writes recent history in `localStorage` on the device. **Clear Recent History** removes only that local list.
+The scoring page does not list past games. **History**, next to New Game, opens them in a modal: recent matches from this device and saved matches from `GET /api/games`, plus a short win list from `GET /api/leaderboard`.
 
-A finished game is also `POST`ed to `/api/games`. If the device is offline, the local archive is kept and the post is skipped. **View Old History** loads `GET /api/games` (newest first) and a short `GET /api/leaderboard` (wins and games played, names matched without case). There is no admin login. Clearing site data does not delete the D1 archive.
+Each row has an **X**. Confirming in the in-app dialog removes a device-only game from `localStorage`. A game that was saved (or loaded from D1) is also removed with `DELETE /api/games/:id`.
+
+A finished game is `POST`ed to `/api/games`. If the device is offline, the local copy is kept and the post is skipped. There is no admin login and no button that clears every game at once.
 
 ## Layout
 

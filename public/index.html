@@ -757,11 +757,30 @@
     gap: 8px;
   }
   .hist-card {
+    position: relative;
     background: var(--bg2);
     border-radius: 10px;
-    padding: 12px;
+    padding: 12px 44px 12px 12px;
     border: 1px solid var(--border);
   }
+  .hist-x {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    min-height: 32px;
+    padding: 0;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 1.15rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .hist-x:active { filter: brightness(1.2); }
   .hist-card .head {
     display: flex;
     justify-content: space-between;
@@ -920,7 +939,8 @@
     .rc-side { padding: 2px; }
     .rc-pts { font-size: 0.88rem; }
     .history-list { gap: 4px; }
-    .hist-card { padding: 6px 8px; border-radius: 4px; }
+    .hist-card { padding: 6px 36px 6px 8px; border-radius: 4px; }
+    .hist-x { top: 4px; right: 4px; width: 28px; height: 28px; min-height: 28px; }
     .hist-card .head { margin-bottom: 2px; }
     .hist-card .names { font-size: 0.88rem; margin-bottom: 0; }
     .banner { padding: 8px; font-size: 0.95rem; }
@@ -1044,7 +1064,7 @@
   }
   .modal.rules-modal h2 { flex: 0 0 auto; }
   .rules-body,
-  .old-history-body {
+  .history-body {
     position: relative;
     flex: 1 1 auto;
     min-height: 0;
@@ -1172,6 +1192,7 @@
       </div>
 
       <div class="toolbar">
+        <button type="button" class="btn" id="btnHistory" aria-haspopup="dialog" aria-controls="historyModal">History</button>
         <button type="button" class="btn" id="btnNewGame">New Game</button>
         <button type="button" class="btn danger" id="btnResetGame">Reset Scores</button>
       </div>
@@ -1209,19 +1230,6 @@
       </div>
     </section>
 
-    <!-- HISTORY -->
-    <section class="panel" id="panel-history">
-      <div class="card">
-        <div class="section-title">Recent History</div>
-        <div class="history-list" id="historyList">
-          <div class="empty">No past matches yet.</div>
-        </div>
-        <div class="toolbar">
-          <button type="button" class="btn" id="btnOldHistory" aria-haspopup="dialog" aria-controls="oldHistoryModal">View Old History</button>
-          <button type="button" class="btn danger" id="btnClearHistory">Clear Recent History</button>
-        </div>
-      </div>
-    </section>
   </main>
 
   <div class="celebrate-layer" id="celebrateLayer" aria-hidden="true"></div>
@@ -1268,14 +1276,14 @@
     </div>
   </div>
 
-  <div class="modal-backdrop" id="oldHistoryModal" hidden>
-    <div class="modal card rules-modal" role="dialog" aria-modal="true" aria-labelledby="oldHistoryTitle">
-      <h2 id="oldHistoryTitle">Old History</h2>
-      <div class="old-history-body" id="oldHistoryBody">
-        <div class="empty">Loading old history…</div>
+  <div class="modal-backdrop" id="historyModal" hidden>
+    <div class="modal card rules-modal" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
+      <h2 id="historyTitle">History</h2>
+      <div class="history-body" id="historyBody">
+        <div class="empty">Loading history…</div>
       </div>
       <div class="rules-actions">
-        <button type="button" class="btn primary" id="oldHistoryDone">Done</button>
+        <button type="button" class="btn primary" id="historyDone">Done</button>
       </div>
     </div>
   </div>
@@ -1423,11 +1431,25 @@
       rounds: entry.rounds || [],
       hammerMode: entry.hammerMode === 'winner' ? 'winner' : 'turns'
     };
+    var id = payload.id;
     try {
       fetch('/api/games', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload)
+      }).then(function (res) {
+        if (!res.ok) return;
+        var still = null;
+        for (var i = 0; i < state.history.length; i++) {
+          if (String(state.history[i].startedAt) === id) still = state.history[i];
+        }
+        if (!still) {
+          deleteRemote(id);
+          return;
+        }
+        still.remoteId = id;
+        save();
+        if (historyOpen()) renderHistoryModal();
       }).catch(function () { /* keep the local archive when offline */ });
     } catch (e) { /* offline */ }
   }
@@ -1528,7 +1550,10 @@
       cancelCelebrate();
       // If we archived a win, remove that history entry
       if (state.history[0] && state.history[0].startedAt === state.startedAt) {
-        state.history.shift();
+        var dropped = state.history.shift();
+        if (dropped && !dropped.incomplete && (dropped.winner === 0 || dropped.winner === 1)) {
+          deleteRemote(String(dropped.remoteId || dropped.startedAt));
+        }
       }
       state.scores = action.prevScores.slice();
       state.hammer = action.prevHammer;
@@ -1616,20 +1641,6 @@
       render();
       save();
       toast('Scores reset');
-    });
-  }
-
-  function clearHistory() {
-    askConfirm({
-      title: 'Are you sure?',
-      message: 'Clear recent history on this device? Old history stays saved.',
-      danger: true
-    }).then(function (ok) {
-      if (!ok) return;
-      state.history = [];
-      save();
-      renderHistory();
-      toast('Recent history cleared');
     });
   }
 
@@ -1734,7 +1745,6 @@
 
     renderRoundLog();
     renderChart();
-    renderHistory();
   }
 
   function renderRoundLog() {
@@ -1787,37 +1797,13 @@
     el.innerHTML = html;
   }
 
-  function renderHistory() {
-    var el = $('historyList');
-    if (!state.history.length) {
-      el.innerHTML = '<div class="empty">No past matches yet.</div>';
-      return;
-    }
-    var html = '';
-    state.history.forEach(function (g) {
-      var result;
-      if (g.winner === null || g.winner === undefined) {
-        result = g.scores[0] + ' – ' + g.scores[1] +
-          (g.incomplete ? ' <span style="color:var(--warn)">(incomplete)</span>' : ' <span style="color:var(--muted)">(tie)</span>');
-      } else {
-        result = '<span class="w">' + shownName(g.names[g.winner], g.winner) + ' won</span> · ' +
-          g.scores[0] + ' – ' + g.scores[1] + ' (to ' + g.target + ')';
-      }
-      html += '<div class="hist-card">' +
-        '<div class="head"><span>' + formatDate(g.endedAt || g.startedAt) + '</span>' +
-        '<span>' + (g.rounds ? g.rounds.length : 0) + ' rounds</span></div>' +
-        '<div class="names">' + shownName(g.names[0], 0) + ' vs ' + shownName(g.names[1], 1) + '</div>' +
-        '<div class="result">' + result + '</div>' +
-        '</div>';
-    });
-    el.innerHTML = html;
-  }
-
-
   var confirmResolver = null;
   var winEpoch = 0;
   var winPromptTimer = 0;
-  var oldHistoryToken = 0;
+  var historyToken = 0;
+  var remoteGames = [];
+  var remoteLeaders = [];
+  var remoteStatus = 'idle';
 
   function askConfirm(opts) {
     return new Promise(function (resolve) {
@@ -1845,7 +1831,7 @@
     confirmResolver = null;
     var modal = $('confirmModal');
     if (modal) modal.hidden = true;
-    if (!rulesOpen() && !oldHistoryOpen()) document.body.classList.remove('modal-open');
+    if (!rulesOpen() && !historyOpen()) document.body.classList.remove('modal-open');
     if (resolve) resolve(!!result);
   }
 
@@ -1855,7 +1841,7 @@
   }
 
   function openRules() {
-    if (confirmResolver || !$('confirmModal').hidden || oldHistoryOpen()) return;
+    if (confirmResolver || !$('confirmModal').hidden || historyOpen()) return;
     var modal = $('rulesModal');
     var body = $('rulesBody');
     if (body) body.scrollTop = 0;
@@ -1868,42 +1854,123 @@
     var modal = $('rulesModal');
     if (!modal || modal.hidden) return;
     modal.hidden = true;
-    if ($('confirmModal').hidden && !oldHistoryOpen()) document.body.classList.remove('modal-open');
+    if ($('confirmModal').hidden && !historyOpen()) document.body.classList.remove('modal-open');
     var btn = $('btnRules');
     if (btn) btn.focus();
   }
 
-  function oldHistoryOpen() {
-    var modal = $('oldHistoryModal');
+  function historyOpen() {
+    var modal = $('historyModal');
     return !!(modal && !modal.hidden);
   }
 
-  function openOldHistory() {
+  function openHistory() {
     if (confirmResolver || !$('confirmModal').hidden || rulesOpen()) return;
-    var modal = $('oldHistoryModal');
+    var modal = $('historyModal');
+    var body = $('historyBody');
+    if (body) body.scrollTop = 0;
     modal.hidden = false;
     document.body.classList.add('modal-open');
-    $('oldHistoryDone').focus();
-    loadOldHistory();
+    $('historyDone').focus();
+    loadHistory();
   }
 
-  function closeOldHistory() {
-    var modal = $('oldHistoryModal');
+  function closeHistory() {
+    var modal = $('historyModal');
     if (!modal || modal.hidden) return;
-    oldHistoryToken += 1;
+    historyToken += 1;
     modal.hidden = true;
     if ($('confirmModal').hidden && !rulesOpen()) document.body.classList.remove('modal-open');
-    var btn = $('btnOldHistory');
+    var btn = $('btnHistory');
     if (btn) btn.focus();
   }
 
-  function renderOldHistory(gamesPayload, boardPayload) {
-    var games = gamesPayload && Array.isArray(gamesPayload.games) ? gamesPayload.games : [];
-    var leaders = boardPayload && Array.isArray(boardPayload.leaders) ? boardPayload.leaders : [];
+  function localHistoryKey(game) {
+    if (!game) return '';
+    if (game.remoteId) return String(game.remoteId);
+    if (game.startedAt != null) return String(game.startedAt);
+    return '';
+  }
+
+  function finishedLocal(game) {
+    return !!(game && !game.incomplete && (game.winner === 0 || game.winner === 1));
+  }
+
+  function mergedHistory() {
+    var byKey = {};
+    var rows = [];
+    function put(row) {
+      var prev = byKey[row.key];
+      if (prev) {
+        prev.local = prev.local || row.local;
+        prev.remote = prev.remote || row.remote;
+        return;
+      }
+      byKey[row.key] = row;
+      rows.push(row);
+    }
+    remoteGames.forEach(function (game) {
+      put({
+        key: String(game.id),
+        when: game.playedAt,
+        names: game.names || [],
+        scores: game.scores || [0, 0],
+        target: game.target,
+        winnerName: game.winnerName || '',
+        incomplete: false,
+        roundCount: game.roundCount || 0,
+        local: false,
+        remote: true
+      });
+    });
+    state.history.forEach(function (game) {
+      var key = localHistoryKey(game);
+      if (key && byKey[key]) {
+        byKey[key].local = true;
+        byKey[key].remote = true;
+        return;
+      }
+      var winnerName = (game.winner === 0 || game.winner === 1)
+        ? shownName(game.names[game.winner], game.winner)
+        : '';
+      put({
+        key: key || ('local-' + String(game.startedAt)),
+        when: game.endedAt || game.startedAt,
+        names: game.names || [],
+        scores: game.scores || [0, 0],
+        target: game.target,
+        winnerName: winnerName,
+        incomplete: !!game.incomplete,
+        roundCount: game.rounds ? game.rounds.length : 0,
+        local: true,
+        remote: finishedLocal(game)
+      });
+    });
+    rows.sort(function (a, b) {
+      return new Date(b.when || 0).getTime() - new Date(a.when || 0).getTime();
+    });
+    return rows;
+  }
+
+  function historyResult(row) {
+    var scores = row.scores || [0, 0];
+    if (row.incomplete) {
+      return esc(scores[0]) + ' – ' + esc(scores[1]) + ' <span style="color:var(--warn)">(incomplete)</span>';
+    }
+    if (!row.winnerName) {
+      return esc(scores[0]) + ' – ' + esc(scores[1]) + ' <span style="color:var(--muted)">(tie)</span>';
+    }
+    return '<span class="w">' + esc(row.winnerName) + ' won</span> · ' +
+      esc(scores[0]) + ' – ' + esc(scores[1]) + ' (to ' + esc(row.target) + ')';
+  }
+
+  function renderHistoryModal() {
+    if (!historyOpen()) return;
+    var rows = mergedHistory();
     var html = '';
-    if (leaders.length) {
+    if (remoteLeaders.length) {
       html += '<div class="section-title">Leaderboard</div><ol class="lb-list">';
-      leaders.forEach(function (row) {
+      remoteLeaders.forEach(function (row) {
         var wins = Number(row.wins) || 0;
         var played = Number(row.games) || 0;
         html += '<li><span>' + esc(row.name || 'Player') + '</span><span class="wins">' +
@@ -1912,34 +1979,28 @@
       });
       html += '</ol>';
     }
-    html += '<div class="section-title">Matches</div>';
-    if (!games.length) {
-      html += '<div class="empty">No old matches yet.</div>';
-    } else {
+    if (remoteStatus === 'loading') {
+      html += '<div class="empty">Loading history…</div>';
+    } else if (remoteStatus === 'error') {
+      html += '<div class="empty">Could not load saved games. Games on this device are still listed.</div>' +
+        '<div class="rules-actions"><button type="button" class="btn" id="historyRetry">Try again</button></div>';
+    }
+    if (!rows.length && remoteStatus !== 'loading') {
+      html += '<div class="empty">No games yet.</div>';
+    } else if (rows.length) {
       html += '<div class="history-list">';
-      games.forEach(function (g) {
-        var names = g.names || [];
-        var scores = g.scores || [0, 0];
-        var when = formatDate(g.playedAt || g.endedAt);
-        var winner = g.winnerName || '';
-        var result = winner
-          ? '<span class="w">' + esc(winner) + ' won</span> · ' + esc(scores[0]) + ' – ' + esc(scores[1]) + ' (to ' + esc(g.target) + ')'
-          : esc(scores[0]) + ' – ' + esc(scores[1]);
-        var rounds = g.roundCount != null ? g.roundCount : 0;
+      rows.forEach(function (row) {
+        var names = row.names || [];
         html += '<div class="hist-card">' +
-          '<div class="head"><span>' + esc(when) + '</span><span>' + rounds + ' rounds</span></div>' +
+          '<button type="button" class="hist-x" data-hist-key="' + esc(row.key) + '" aria-label="Delete this game">×</button>' +
+          '<div class="head"><span>' + esc(formatDate(row.when)) + '</span><span>' +
+            (row.roundCount === 1 ? '1 round' : row.roundCount + ' rounds') + '</span></div>' +
           '<div class="names">' + esc(shownName(names[0], 0)) + ' vs ' + esc(shownName(names[1], 1)) + '</div>' +
-          '<div class="result">' + result + '</div></div>';
+          '<div class="result">' + historyResult(row) + '</div></div>';
       });
       html += '</div>';
     }
-    $('oldHistoryBody').innerHTML = html;
-  }
-
-  function showOldHistoryError() {
-    $('oldHistoryBody').innerHTML =
-      '<div class="empty">Could not load old history. Recent games on this device are still here.</div>' +
-      '<div class="rules-actions"><button type="button" class="btn" id="oldHistoryRetry">Try again</button></div>';
+    $('historyBody').innerHTML = html;
   }
 
   function fetchJson(url) {
@@ -1949,17 +2010,82 @@
     });
   }
 
-  function loadOldHistory() {
-    var token = ++oldHistoryToken;
-    $('oldHistoryBody').innerHTML = '<div class="empty">Loading old history…</div>';
+  function loadHistory() {
+    var token = ++historyToken;
+    remoteStatus = 'loading';
+    renderHistoryModal();
     var gamesReq = fetchJson('/api/games?limit=40');
     var boardReq = fetchJson('/api/leaderboard?limit=8').catch(function () { return null; });
     Promise.all([gamesReq, boardReq]).then(function (pair) {
-      if (token !== oldHistoryToken) return;
-      renderOldHistory(pair[0], pair[1]);
+      if (token !== historyToken) return;
+      var gamesPayload = pair[0] || {};
+      var boardPayload = pair[1];
+      remoteGames = Array.isArray(gamesPayload.games) ? gamesPayload.games : [];
+      remoteLeaders = boardPayload && Array.isArray(boardPayload.leaders) ? boardPayload.leaders : [];
+      remoteStatus = 'ready';
+      renderHistoryModal();
     }).catch(function () {
-      if (token !== oldHistoryToken) return;
-      showOldHistoryError();
+      if (token !== historyToken) return;
+      remoteGames = [];
+      remoteLeaders = [];
+      remoteStatus = 'error';
+      renderHistoryModal();
+    });
+  }
+
+  function deleteRemote(id) {
+    return fetch('/api/games/' + encodeURIComponent(id), { method: 'DELETE' }).then(function (res) {
+      return res.ok || res.status === 404;
+    }).catch(function () { return false; });
+  }
+
+  function dropLocalHistory(key) {
+    var kept = [];
+    var removed = [];
+    state.history.forEach(function (game) {
+      var localKey = localHistoryKey(game);
+      var fallback = 'local-' + String(game.startedAt);
+      if (localKey === key || fallback === key) removed.push(game);
+      else kept.push(game);
+    });
+    state.history = kept;
+    save();
+    return removed;
+  }
+
+  function askDeleteHistory(key) {
+    if (!key) return;
+    var row = null;
+    mergedHistory().forEach(function (item) {
+      if (item.key === key) row = item;
+    });
+    if (!row) return;
+    askConfirm({
+      title: 'Are you sure?',
+      message: 'Delete this game from history?',
+      danger: true
+    }).then(function (ok) {
+      if (!ok || !historyOpen()) return;
+      var removed = dropLocalHistory(key);
+      if (!row.remote) {
+        renderHistoryModal();
+        return;
+      }
+      deleteRemote(key).then(function (gone) {
+        if (!gone) {
+          removed.forEach(function (game) { state.history.unshift(game); });
+          save();
+          toast('Could not delete that saved game');
+        } else {
+          remoteGames = remoteGames.filter(function (game) { return String(game.id) !== key; });
+          fetchJson('/api/leaderboard?limit=8').then(function (board) {
+            remoteLeaders = board && Array.isArray(board.leaders) ? board.leaders : remoteLeaders;
+            if (historyOpen()) renderHistoryModal();
+          }).catch(function () { /* keep the list already on screen */ });
+        }
+        if (historyOpen()) renderHistoryModal();
+      });
+      renderHistoryModal();
     });
   }
 
@@ -1982,7 +2108,7 @@
   function scheduleWinPrompt(epoch, delay) {
     winPromptTimer = setTimeout(function () {
       if (epoch !== winEpoch || !state.gameOver || state.winner === null) return;
-      if (confirmResolver || rulesOpen() || oldHistoryOpen()) {
+      if (confirmResolver || rulesOpen() || historyOpen()) {
         scheduleWinPrompt(epoch, 280);
         return;
       }
@@ -2181,12 +2307,14 @@
   });
   $('btnNewGame').addEventListener('click', function () { newGame(true); });
   $('btnResetGame').addEventListener('click', resetScores);
-  $('btnClearHistory').addEventListener('click', clearHistory);
-  $('btnOldHistory').addEventListener('click', openOldHistory);
-  $('oldHistoryDone').addEventListener('click', closeOldHistory);
-  $('oldHistoryModal').addEventListener('click', function (e) {
-    if (e.target === $('oldHistoryModal')) closeOldHistory();
-    if (e.target && e.target.id === 'oldHistoryRetry') loadOldHistory();
+  $('btnHistory').addEventListener('click', openHistory);
+  $('historyDone').addEventListener('click', closeHistory);
+  $('historyModal').addEventListener('click', function (e) {
+    if (e.target === $('historyModal')) closeHistory();
+    var retry = e.target.closest && e.target.closest('#historyRetry');
+    if (retry) loadHistory();
+    var remove = e.target.closest && e.target.closest('.hist-x');
+    if (remove) askDeleteHistory(remove.getAttribute('data-hist-key'));
   });
   $('confirmCancel').addEventListener('click', function () { closeConfirm(false); });
   $('confirmOk').addEventListener('click', function () { closeConfirm(true); });
@@ -2205,9 +2333,9 @@
       closeConfirm(false);
       return;
     }
-    if (oldHistoryOpen()) {
+    if (historyOpen()) {
       e.preventDefault();
-      closeOldHistory();
+      closeHistory();
       return;
     }
     if (rulesOpen()) {

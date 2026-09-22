@@ -18,6 +18,17 @@ export type StoredGame = {
 
 export type GameBodyResult = { ok: true; game: StoredGame } | { ok: false; error: string };
 
+export function parseGameId(raw: string): string | null {
+  let id = raw;
+  try {
+    id = decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+  if (!ID_RE.test(id)) return null;
+  return id;
+}
+
 export function parseLimit(raw: string | null, fallback: number, max: number): number {
   if (raw == null || raw.trim() === "") return fallback;
   if (!/^\d+$/.test(raw.trim())) return fallback;
