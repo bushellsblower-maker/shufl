@@ -353,3 +353,13 @@ test("confirm dialog stacks above the history modal", () => {
   const histClick = html.indexOf("$('historyModal').addEventListener('click'");
   assert.match(html.slice(histClick, histClick + 280), /if \(!\$\('confirmModal'\)\.hidden\) return;/);
 });
+
+test("background is the table photo in public/, under the dark shade", () => {
+  const html = page("public/index.html");
+  assert.equal(html.includes("data:image/"), false);
+  assert.match(html, /\.bg-photo\s*\{[^}]*url\("bg-board\.jpg"\)/);
+  assert.match(html, /\.bg-shade\s*\{[^}]*linear-gradient\(/);
+  const jpg = readFileSync(join(root, "public/bg-board.jpg"));
+  assert.equal(jpg.subarray(0, 3).toString("hex"), "ffd8ff");
+  assert.ok(jpg.length < 150_000, `bg-board.jpg is ${jpg.length} bytes`);
+});
