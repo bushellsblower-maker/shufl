@@ -53,6 +53,16 @@
     overscroll-behavior-x: none;
   }
   body {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  /* iOS Safari will not let you type into an input with user-select: none. */
+  input {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  body {
     display: flex;
     flex-direction: column;
     min-height: 100dvh;
@@ -2546,6 +2556,18 @@
       });
     }
   }
+
+  function blockClipboard(e) {
+    e.preventDefault();
+  }
+  ['copy', 'cut', 'paste', 'contextmenu', 'dragstart', 'drop'].forEach(function (type) {
+    document.addEventListener(type, blockClipboard, true);
+  });
+  document.addEventListener('beforeinput', function (e) {
+    if (e.inputType === 'insertFromPaste' || e.inputType === 'insertFromDrop' || e.inputType === 'deleteByCut') {
+      e.preventDefault();
+    }
+  }, true);
 
   // Events
   $('name1').addEventListener('input', function () {

@@ -306,6 +306,19 @@ test("target and hammer lock after the first points and unlock on a fresh match"
   assert.equal(html.slice(historyStart, historyEnd).includes("setupLocked"), false);
 });
 
+test("copy, cut, and paste are disabled across the page", () => {
+  const html = page("public/index.html");
+  assert.match(html, /body\s*\{\s*-webkit-user-select:\s*none;\s*user-select:\s*none;\s*-webkit-touch-callout:\s*none;/);
+  assert.match(html, /input\s*\{\s*-webkit-user-select:\s*text;\s*user-select:\s*text;/);
+  assert.match(
+    html,
+    /\['copy', 'cut', 'paste', 'contextmenu', 'dragstart', 'drop'\]\.forEach\(function \(type\) \{\s*document\.addEventListener\(type, blockClipboard, true\);/
+  );
+  assert.match(html, /function blockClipboard\(e\) \{\s*e\.preventDefault\(\);/);
+  assert.match(html, /e\.inputType === 'insertFromPaste'/);
+  assert.match(html, /e\.inputType === 'insertFromDrop'/);
+});
+
 test("confirm dialog stacks above the history modal", () => {
   const html = page("public/index.html");
   assert.match(html, /#rulesModal,\s*#historyModal\s*\{\s*z-index:\s*200/);
