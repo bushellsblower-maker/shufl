@@ -41,11 +41,12 @@ test("primary flow is one page with on-board scoring", () => {
     assert.equal(html.includes(`data-pts="${pts}"`), true, pts);
   }
   assert.equal(html.includes('data-pts="5"'), false);
-  assert.match(
-    html,
-    /<button type="button" class="zone-btn z5" data-pts="1" data-hanger="1" aria-label="Add 1, hanger bonus">Hanger<small>\+1<\/small><\/button>/
-  );
-  assert.match(html, /\.zones\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(html, /<button type="button" class="zone-btn z4" data-pts="4">\+4<\/button>/);
+  assert.equal(/<small>\s*end\s*<\/small>/i.test(html), false);
+  assert.equal(html.includes("zone-btn z5"), false);
+  assert.equal(/<button[^>]*>\s*Hanger/.test(html), false);
+  assert.match(html, /\.zones\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/);
+  assert.equal(/\.zones\s*\{[^}]*repeat\(5,/.test(html), false);
   const dockBlocks = html.match(/\.score-dock\s*\{[^}]*\}/g) || [];
   assert.ok(dockBlocks.length >= 1);
   for (const block of dockBlocks) {
@@ -177,7 +178,7 @@ test("hammer mode defaults to take turns and can keep the winner", () => {
 test("round cards call out hanger bonuses apart from zone points", () => {
   const html = page("public/index.html");
   assert.match(html, /<button type="button" class="zone-btn z1" data-pts="1">\+1<\/button>/);
-  assert.equal((html.match(/data-hanger=/g) || []).length, 1);
+  assert.equal((html.match(/data-hanger=/g) || []).length, 0);
   assert.match(html, /roundHangers:\s*\[0,\s*0\]/);
   assert.match(html, /roundHangers: state\.roundHangers/);
   assert.match(html, /state\.roundHangers = normalizePair\(data\.current\.roundHangers\)/);
