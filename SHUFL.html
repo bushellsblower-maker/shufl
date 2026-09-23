@@ -105,7 +105,7 @@
     min-width: 0;
     max-width: 100%;
   }
-  button, input, .tab { touch-action: manipulation; }
+  a, button, input, .tab { touch-action: manipulation; }
 
   header {
     display: flex;
@@ -136,6 +136,13 @@
     font-size: 0.82rem;
     letter-spacing: 0.08em;
     white-space: nowrap;
+  }
+  .btn.play-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    -webkit-user-drag: none;
   }
   header h1 {
     font-family: var(--display);
@@ -1302,6 +1309,7 @@
       <p>Shuffleboard scorekeeper</p>
     </div>
     <button type="button" class="btn header-btn" id="btnRules" aria-haspopup="dialog" aria-controls="rulesModal">Rules</button>
+    <a class="btn primary header-btn play-btn" id="btnPlay" href="https://shuffle.cybush.uk" draggable="false" aria-label="Play the 3D game">Play</a>
   </header>
 
   <main>
