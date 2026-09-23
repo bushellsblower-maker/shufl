@@ -9,8 +9,8 @@ Publishing is **GitHub → Cloudflare** only (GitHub Actions, or Workers Builds)
 ## Stack
 
 - Worker `shufl` records a fleet audit hit, serves `/api/games` and `/api/leaderboard` from D1, then serves static assets
-- `public/index.html` is the single-file dashboard (table photo embedded)
-- `SHUFL.html` at the repo root is the same file, for offline download
+- `public/index.html` is the single-file dashboard; the background table photo is `public/bg-board.jpg`
+- `SHUFL.html` at the repo root is the same file, for offline download (keep `bg-board.jpg` next to it to see the photo)
 - Analytics Engine dataset `cybush`, binding `AUDIT_HITS` (host, path, status)
 - D1 database `shufl`, binding `DB` (finished games + `leaderboard` view)
 - `npm run deploy` → `scripts/cf-publish.mjs` (create D1 if needed, apply migrations, deploy Worker + custom domain `shufl.cybush.uk`)
@@ -57,6 +57,7 @@ A finished game is `POST`ed to `/api/games`. If the device is offline, the local
 
 ```
 public/index.html          served at /
+public/bg-board.jpg        background table photo
 SHUFL.html                 offline copy
 src/index.ts               audit hit, history API, then ASSETS.fetch
 migrations/0001_games.sql  games table + leaderboard view
