@@ -53,6 +53,16 @@
     overscroll-behavior-x: none;
   }
   body {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  /* iOS Safari will not let you type into an input with user-select: none. */
+  input {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  body {
     display: flex;
     flex-direction: column;
     min-height: 100dvh;
@@ -95,7 +105,7 @@
     min-width: 0;
     max-width: 100%;
   }
-  button, input, .tab { touch-action: manipulation; }
+  a, button, input, .tab { touch-action: manipulation; }
 
   header {
     display: flex;
@@ -126,6 +136,13 @@
     font-size: 0.82rem;
     letter-spacing: 0.08em;
     white-space: nowrap;
+  }
+  .btn.play-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    -webkit-user-drag: none;
   }
   header h1 {
     font-family: var(--display);
@@ -1278,6 +1295,7 @@
       <p>Shuffleboard scorekeeper</p>
     </div>
     <button type="button" class="btn header-btn" id="btnRules" aria-haspopup="dialog" aria-controls="rulesModal">Rules</button>
+    <a class="btn primary header-btn play-btn" id="btnPlay" href="https://shuffle.cybush.uk" draggable="false" aria-label="Play the 3D game">Play</a>
   </header>
 
   <main>
@@ -2531,6 +2549,18 @@
       });
     }
   }
+
+  function blockClipboard(e) {
+    e.preventDefault();
+  }
+  ['copy', 'cut', 'paste', 'contextmenu', 'dragstart', 'drop'].forEach(function (type) {
+    document.addEventListener(type, blockClipboard, true);
+  });
+  document.addEventListener('beforeinput', function (e) {
+    if (e.inputType === 'insertFromPaste' || e.inputType === 'insertFromDrop' || e.inputType === 'deleteByCut') {
+      e.preventDefault();
+    }
+  }, true);
 
   // Events
   $('name1').addEventListener('input', function () {

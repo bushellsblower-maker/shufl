@@ -307,6 +307,33 @@ test("target and hammer lock after the first points and unlock on a fresh match"
   assert.equal(html.slice(historyStart, historyEnd).includes("setupLocked"), false);
 });
 
+test("play button in the header opens the 3D game in the same tab", () => {
+  const html = page("public/index.html");
+  const header = html.slice(html.indexOf("<header>"), html.indexOf("</header>"));
+  assert.match(
+    header,
+    /<a class="btn primary header-btn play-btn" id="btnPlay" href="https:\/\/shuffle\.cybush\.uk"[^>]*>Play<\/a>/
+  );
+  assert.ok(header.indexOf('id="btnRules"') < header.indexOf('id="btnPlay"'));
+  const play = header.slice(header.indexOf('id="btnPlay"'), header.indexOf("</a>", header.indexOf('id="btnPlay"')));
+  assert.equal(play.includes("target="), false);
+  assert.equal(html.includes("shuttle.cybush.uk"), false);
+  assert.match(html, /\.btn\.play-btn\s*\{[^}]*display:\s*inline-flex[^}]*text-decoration:\s*none/);
+});
+
+test("copy, cut, and paste are disabled across the page", () => {
+  const html = page("public/index.html");
+  assert.match(html, /body\s*\{\s*-webkit-user-select:\s*none;\s*user-select:\s*none;\s*-webkit-touch-callout:\s*none;/);
+  assert.match(html, /input\s*\{\s*-webkit-user-select:\s*text;\s*user-select:\s*text;/);
+  assert.match(
+    html,
+    /\['copy', 'cut', 'paste', 'contextmenu', 'dragstart', 'drop'\]\.forEach\(function \(type\) \{\s*document\.addEventListener\(type, blockClipboard, true\);/
+  );
+  assert.match(html, /function blockClipboard\(e\) \{\s*e\.preventDefault\(\);/);
+  assert.match(html, /e\.inputType === 'insertFromPaste'/);
+  assert.match(html, /e\.inputType === 'insertFromDrop'/);
+});
+
 test("confirm dialog stacks above the history modal", () => {
   const html = page("public/index.html");
   assert.match(html, /#rulesModal,\s*#historyModal\s*\{\s*z-index:\s*200/);
