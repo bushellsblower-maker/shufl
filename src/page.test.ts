@@ -106,7 +106,7 @@ test("rules button opens an in-app rules modal", () => {
     "Zone 3: 3 points",
     "Zone 4: 4 points",
     "A weight touching a zone line counts as the lower zone.",
-    "A hanger (any part hanging over the far end, not the side, without falling) scores +1 on top of that weight’s zone score (e.g. zone 1 hanger = 2; zone 4 hanger = 5).",
+    "A weight hanging over the far end scores 5 points (Hanger).",
     "After the round is scored, play the next round from the other end.",
     "First to the agreed total (usually 15 or 21) wins.",
     "The hammer is the last weight of the round. Either the round winner keeps it, or the teams take turns.",
@@ -118,6 +118,9 @@ test("rules button opens an in-app rules modal", () => {
     assert.ok(at > cursor, line);
     cursor = at + line.length;
   }
+  const rulesBody = html.slice(html.indexOf('id="rulesBody"'), html.indexOf('id="rulesDone"'));
+  assert.equal((rulesBody.match(/hang/gi) || []).length, 2);
+  assert.equal(rulesBody.includes("+1"), false);
   assert.ok(html.indexOf('id="rulesModal"') > html.indexOf('id="confirmModal"'));
   assert.equal(html.includes('id="confirmCancel">Cancel</button>'), true);
   assert.equal(html.includes('id="confirmOk">Confirm</button>'), true);
