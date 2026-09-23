@@ -495,7 +495,7 @@
   }
   .zones {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
   }
   .zone-btn {
@@ -520,19 +520,6 @@
   .zone-btn.z2 { color: #e7d7b0; border-color: #7a7364; }
   .zone-btn.z3 { color: #f0d48a; border-color: #8a7040; }
   .zone-btn.z4 { color: #f3e0b0; border-color: #a67c32; background: linear-gradient(180deg, #4a4336, #2e2a24); }
-  .zone-btn.z5 {
-    color: #ffe7a3;
-    border-color: #c4923a;
-    background: linear-gradient(180deg, #5c4b30, #3a2e1c);
-    letter-spacing: 0.02em;
-  }
-  .zone-btn small {
-    display: block;
-    font-size: 0.75rem;
-    font-weight: 600;
-    opacity: 0.9;
-    margin-top: 2px;
-  }
 
   .scoring-for {
     display: grid;
@@ -957,10 +944,9 @@
     .custom-target { height: 36px; width: 56px; }
     .controls-row .custom-target { height: 36px; width: 42px; font-size: 14px; padding: 0; }
 
-    .zones { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+    .zones { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
     .zones-title { margin-bottom: 6px; font-size: 0.72rem; }
     .zone-btn { min-height: 44px; font-size: 1.05rem; padding: 4px 1px; line-height: 1; letter-spacing: 0; }
-    .zone-btn small { font-size: 0.58rem; margin-top: 1px; }
     .actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1fr); gap: 6px; }
     .actions .btn {
       min-height: 42px;
@@ -1330,8 +1316,7 @@
             <button type="button" class="zone-btn z1" data-pts="1">+1</button>
             <button type="button" class="zone-btn z2" data-pts="2">+2</button>
             <button type="button" class="zone-btn z3" data-pts="3">+3</button>
-            <button type="button" class="zone-btn z4" data-pts="4" aria-label="Add 4, hammer end">+4<small>end</small></button>
-            <button type="button" class="zone-btn z5" data-pts="1" data-hanger="1" aria-label="Add 1, hanger bonus">Hanger<small>+1</small></button>
+            <button type="button" class="zone-btn z4" data-pts="4">+4</button>
           </div>
         </div>
 
