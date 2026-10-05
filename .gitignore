@@ -1,4 +1,5 @@
 node_modules/
+src/version.generated.ts
 .wrangler/
 .dev.vars
 dist/

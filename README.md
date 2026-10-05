@@ -4,11 +4,13 @@ Industrial shuffleboard scorekeeper. Cloudflare Worker **`shufl`** at **https://
 
 Recent scores, player names, and match history stay in the browser (`localStorage`). Finished games are also posted to D1 so old history and the leaderboard survive a cleared device.
 
-Publishing is **GitHub → Cloudflare** only (GitHub Actions, or Workers Builds). No laptop deploy.
+Publishing is **Cloudflare Workers Builds** on push to `main` (`npx wrangler deploy`). No laptop deploy.
+
+Version: curl -sI https://shufl.cybush.uk/ | grep x-cybush-version ; /__version
 
 ## Stack
 
-- Worker `shufl` records a fleet audit hit, serves `/api/games` and `/api/leaderboard` from D1, then serves static assets
+- Worker `shufl` records a fleet audit hit, serves `GET /__version`, serves `/api/games` and `/api/leaderboard` from D1, then serves static assets
 - `public/index.html` is the single-file dashboard; the background table photo is `public/bg-board.jpg`
 - `SHUFL.html` at the repo root is the same file, for offline download (keep `bg-board.jpg` next to it to see the photo)
 - Analytics Engine dataset `cybush`, binding `AUDIT_HITS` (host, path, status)
@@ -17,33 +19,17 @@ Publishing is **GitHub → Cloudflare** only (GitHub Actions, or Workers Builds)
 
 `SITE_URL` and the hostname live in `wrangler.jsonc`.
 
-## Publish (GitHub Actions)
-
-Push or merge to `main`, or run **Actions → Publish to Cloudflare**. The workflow runs `npm ci` and `npm run deploy`. That script creates D1 database `shufl` when it is missing, writes the id into the publish checkout, applies `migrations/`, and deploys the Worker.
-
-Repository secrets (Settings → Secrets and variables → Actions) on **this** repo:
-
-| Secret | Purpose |
-| --- | --- |
-| `CLOUDFLARE_API_TOKEN` | Deploy Workers and attach a custom domain on zone `cybush.uk` |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account that owns `cybush.uk` |
-
-These are the same secret **names** Adonis uses. GitHub Actions secrets are per repository, so values stored on Adonis are not visible here. Add both secrets on `bushellsblower-maker/shufl`. Do not commit token values.
-
-Zone `cybush.uk` must already be on that account. A successful deploy creates Worker `shufl` and attaches `shufl.cybush.uk`. `run_worker_first` is on so `/` still writes an audit point before `index.html` is served.
-
 ## Publish (Workers Builds)
 
-Same deploy command, from the Cloudflare dashboard:
+Push to `main` deploys from the connected Cloudflare project. The live command is `npx wrangler deploy` (no separate dashboard build command). That command runs the Wrangler build step, which writes `src/version.generated.ts` before upload.
 
-1. Workers & Pages → Create → Import a repository → `bushellsblower-maker/shufl`
-2. Production branch: `main`
-3. Build command: `npm ci`
-4. Deploy command: `npm run deploy`
+Workers Builds uses the connected Cloudflare account. You do not add `CLOUDFLARE_API_TOKEN` to the Git repository.
 
-Workers Builds uses the connected Cloudflare account. You do not add `CLOUDFLARE_API_TOKEN` to the Git repository for that path. GitHub Actions is enough once the two secrets above exist.
+Zone `cybush.uk` must already be on that account. A successful deploy attaches `shufl.cybush.uk`. `run_worker_first` is on so `/` still writes an audit point before `index.html` is served.
 
-`wrangler.jsonc` does not commit a `database_id`. The default Workers Builds command, `npx wrangler deploy`, provisions D1 database `shufl` and binds it. The Worker creates the games table and leaderboard view on the first history request if migrations have not been applied yet. Set the deploy command to `npm run deploy` when you want the publish script to apply `migrations/` before the Worker starts.
+`wrangler.jsonc` does not commit a `database_id`. `npx wrangler deploy` provisions D1 database `shufl` and binds it. The Worker creates the games table and leaderboard view on the first history request if migrations have not been applied yet. Set the deploy command to `npm run deploy` when you want the publish script to apply `migrations/` before the Worker starts.
+
+GitHub Actions runs `.github/workflows/check.yml` only (typecheck and tests) on pull requests and pushes to `main`.
 
 ## Data
 
@@ -59,9 +45,10 @@ A finished game is `POST`ed to `/api/games`. If the device is offline, the local
 public/index.html          served at /
 public/bg-board.jpg        background table photo
 SHUFL.html                 offline copy
-src/index.ts               audit hit, history API, then ASSETS.fetch
+src/index.ts               version header, audit hit, history API, then ASSETS.fetch
 migrations/0001_games.sql  games table + leaderboard view
+scripts/write-version.mjs  git sha for X-Cybush-Version
 scripts/cf-publish.mjs     create D1, migrate, deploy
 wrangler.jsonc             name, domain, Analytics Engine, D1 binding
-.github/workflows/         typecheck + cloud publish
+.github/workflows/         typecheck and tests
 ```
