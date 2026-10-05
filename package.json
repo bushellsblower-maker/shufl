@@ -3,8 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predeploy": "node scripts/write-version.mjs",
     "deploy": "node scripts/cf-publish.mjs",
+    "pretypecheck": "node scripts/write-version.mjs",
     "typecheck": "tsc --noEmit",
+    "pretest": "node scripts/write-version.mjs",
     "test": "node --experimental-strip-types --test src/**/*.test.ts scripts/**/*.test.mjs"
   },
   "devDependencies": {
